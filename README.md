@@ -1,2 +1,0 @@
-# bygstome
-bygstome bild
