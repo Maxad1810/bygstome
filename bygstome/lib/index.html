@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stomkalkyl – materialberäkning för regelstomme</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+<h1>Stomkalkyl</h1>
+<p class="lead">Räkna ut virke, skivor och isolering till en regelstomme. Fyll i husets mått – listan uppdateras direkt.</p>
+<div class="grid">
+<div class="panel">
+<fieldset><legend>Ritningar</legend>
+<label>Namn<input id="pjName" type="text" maxlength="60" placeholder="t.ex. Sommarstuga"></label>
+<div class="tools" style="margin:8px 0"><button class="primary" id="pjSave" type="button">Spara</button><button id="pjNew" type="button">Ny ritning</button></div>
+<label>Sparade<select id="pjList"></select></label>
+<div class="tools" style="margin:8px 0"><button id="pjOpen" type="button">Öppna</button><button id="pjDel" type="button">Ta bort</button></div>
+<div class="tools" style="margin:6px 0"><button id="pjExp" type="button">Exportera fil</button><button id="pjImp" type="button">Importera fil</button><input type="file" id="pjFile" accept=".json,application/json" hidden></div>
+<div id="pjMsg" class="note" role="status" style="margin-top:4px"></div>
+</fieldset>
+<fieldset><legend>Husets mått</legend>
+<div class="row">
+<label>Längd (m)<input id="L" type="number" step="0.1" min="1" value="10"></label>
+<label>Bredd (m)<input id="W" type="number" step="0.1" min="1" value="8"></label>
+<label>Vägghöjd (m)<input id="H" type="number" step="0.1" min="2" value="2.5"></label>
+</div></fieldset>
+<fieldset><legend>Husform</legend>
+<div class="row">
+<label>Form<select id="hs"><option value="r" selected>Rektangel</option><option value="l">L-form</option><option value="t">T-form</option><option value="x">X-form (kors)</option><option value="u">U-form</option></select></label>
+<label>Våningar huvudhus<select id="vn"><option>1</option><option>2</option><option>3</option></select></label>
+<label>Vingens längd (m)<input id="GL" type="number" step="0.1" min="2" value="6"></label>
+<label>Vingens bredd (m)<input id="GB" type="number" step="0.1" min="2" value="5"></label>
+<label>Våningar vinge 1<select id="vw1"><option>1</option><option>2</option><option>3</option></select></label>
+<label>Våningar vinge 2<select id="vw2"><option>1</option><option>2</option><option>3</option></select></label>
+</div></fieldset>
+<fieldset><legend>Golv</legend>
+<label class="chk"><input type="checkbox" id="sF" checked> Samma som husets mått</label>
+<div class="row">
+<label>Golvlängd (m)<input id="FL" type="number" step="0.1" min="1" value="10"></label>
+<label>Golvbredd (m)<input id="FW" type="number" step="0.1" min="1" value="8"></label>
+<label>Bjälkdimension<select id="jd"><option>45x170</option><option selected>45x195</option><option>45x220</option></select></label>
+<label>Bjälkavstånd<select id="jc"><option value="0.4">400 mm</option><option value="0.6" selected>600 mm</option></select></label>
+<label>Grund<select id="gr"><option value="p" selected>Plintar</option><option value="n">Ingen (golv på mark)</option></select></label>
+<label>Plinthöjd (m)<input id="ph" type="number" step="0.05" min="0.1" value="0.4"></label>
+</div></fieldset>
+<fieldset><legend>Väggar</legend>
+<label class="chk"><input type="checkbox" id="sWl" checked> Samma som husets mått</label>
+<div class="row">
+<label>Vägg 1 (m)<input id="W1" type="number" step="0.1" min="0" value="10"></label>
+<label>Vägg 2 (m)<input id="W2" type="number" step="0.1" min="0" value="8"></label>
+<label>Vägg 3 (m)<input id="W3" type="number" step="0.1" min="0" value="10"></label>
+<label>Vägg 4 (m)<input id="W4" type="number" step="0.1" min="0" value="8"></label>
+<label>Vägghöjd (m)<input id="H2" type="number" step="0.1" min="2" value="2.5"></label>
+<label>Innerväggar, total längd (m)<input id="I" type="number" step="0.5" min="0" value="12"></label>
+<label>Fasadpanel<select id="pd"><option value="l" selected>Liggande panel</option><option value="s">Stående panel</option></select></label>
+</div></fieldset>
+<fieldset><legend>Virke</legend>
+<div class="row">
+<label>Regeldimension<select id="dim"><option>45x95</option><option>45x120</option><option selected>45x145</option><option>45x195</option></select></label>
+<label>Regelavstånd (c/c)<select id="cc"><option value="0.45">450 mm</option><option value="0.6" selected>600 mm</option></select></label>
+</div></fieldset>
+<fieldset><legend>Tak</legend>
+<label class="chk"><input type="checkbox" id="sR" checked> Samma som husets mått</label>
+<div class="row">
+<label>Takets längd (m)<input id="RL" type="number" step="0.1" min="1" value="10"></label>
+<label>Takets bredd (m)<input id="RW" type="number" step="0.1" min="1" value="8"></label>
+<label>Takkonstruktion<select id="rt"><option value="t" selected>Takstolar</option><option value="g">Limträbalkar</option></select></label>
+<label>Balkstorlek (mm)<select id="rd"></select></label>
+<label>Takvinkel (°)<input id="P" type="number" step="1" min="0" max="60" value="27"></label>
+<label>Takfot/utsprång (m)<input id="O" type="number" step="0.1" min="0" value="0.5"></label>
+<label>Takstolsavstånd (m)<select id="ccT"><option value="1.0">1,0</option><option value="1.2" selected>1,2</option></select></label>
+<label>Spill (%)<input id="S" type="number" step="1" min="0" max="30" value="10"></label>
+</div></fieldset>
+<fieldset><legend>Fönster och dörrar</legend>
+<div id="ops"></div>
+<button type="button" id="add">Lägg till öppning</button>
+</fieldset>
+<fieldset><legend>El invändigt</legend>
+<label>Kabelhöjd längs väggen (m)<input id="elY" type="number" step="0.05" min="0.1" max="2.6" value="0.25"></label>
+<div id="elList"></div>
+<div class="tools" style="margin:6px 0"><button type="button" id="addU">+ Eluttag</button><button type="button" id="addB">+ Brytare</button><button type="button" id="addL">+ Lamputtag (vägg)</button><button type="button" id="addT">+ Taklampa</button><button type="button" id="addC">+ Elcentral</button></div>
+<p class="note" style="margin:4px 0 0">Planeringsunderlag. Elinstallation får bara göras av behörig elinstallatör.</p>
+</fieldset>
+<fieldset><legend>Altan</legend>
+<label class="chk"><input type="checkbox" id="dk"> Lägg till altan</label>
+<div class="row">
+<label>Sida<select id="dkS"><option value="0">Framsida (vägg 1)</option><option value="1">Höger (vägg 2)</option><option value="2">Baksida (vägg 3)</option><option value="3">Vänster (vägg 4)</option></select></label>
+<label>Läge längs väggen (m)<input id="dkX" type="number" step="0.05" min="0" value="1"></label>
+<label>Längd (m)<input id="dkL" type="number" step="0.1" min="1" value="5"></label>
+<label>Djup (m)<input id="dkD" type="number" step="0.1" min="1" value="3"></label>
+<label>Höjd över mark (m)<input id="dkH" type="number" step="0.05" min="0.2" value="0.7"></label>
+</div>
+<label class="chk" style="margin-top:8px"><input type="checkbox" id="dkR" checked> Räcke</label>
+<label class="chk"><input type="checkbox" id="dkT" checked> Trappa</label>
+<p class="note" style="margin:4px 0 0">Dra altanen i 3D för att flytta den längs väggen eller till en annan vägg.</p>
+</fieldset>
+</div>
+<div>
+<div class="panel" id="p3d" style="margin-bottom:16px">
+<h2>3D-modell</h2>
+<div id="c3d"></div>
+<label>Skala av lager: <b id="peelTxt">hela huset</b><input id="lpeel" type="range" min="0" max="13" value="0" step="1"></label>
+<div class="tools" style="align-items:center">
+<label class="chk"><input type="checkbox" id="l1" checked> Golv</label>
+<label class="chk"><input type="checkbox" id="l2" checked> Väggar</label>
+<label class="chk"><input type="checkbox" id="l13" checked> El invändigt</label>
+<label class="chk"><input type="checkbox" id="l14" checked> Altan</label>
+<label class="chk"><input type="checkbox" id="l3" checked> Takstolar</label>
+<label class="chk"><input type="checkbox" id="l9" checked> Takplåt</label>
+<label class="chk"><input type="checkbox" id="l10" checked> Takpapp</label>
+<label class="chk"><input type="checkbox" id="l11" checked> Råspont</label>
+<label class="chk"><input type="checkbox" id="l5" checked> Vindskivor och plåtdetaljer</label>
+<label class="chk"><input type="checkbox" id="l6" checked> Rännor och stuprör</label>
+<label class="chk"><input type="checkbox" id="l7" checked> Fasad (panel)</label>
+<label class="chk"><input type="checkbox" id="l12" checked> Luftspalt (ströläkt)</label>
+<label class="chk"><input type="checkbox" id="l8" checked> Vindskydd</label>
+<button id="lk3" type="button">Rotera 3D: på</button>
+<button id="rs3" type="button">Återställ vy</button>
+<button id="rs4" type="button">Fördela öppningar</button>
+<button id="lAll" type="button">Visa alla lager</button>
+<button id="lNone" type="button">Dölj alla lager</button>
+</div>
+<p class="note">Dra i bakgrunden för att rotera, scrolla eller nyp för att zooma. På mobil är rotation avstängd så att sidan går att scrolla – tryck ”Rotera 3D” för att vrida och flytta saker i modellen. Ta tag i ett fönster (blått) eller en dörr (brun) och dra för att flytta det längs väggen – eller till en annan vägg. ”Fördela öppningar” återställer placeringen. Avmarkera ”Tak” för att se takstolarna under.</p>
+</div>
+<div class="panel">
+<h2>Inköpslista</h2>
+<div class="scroll"><table id="res" aria-live="polite"></table></div>
+<p class="note">Priserna är riktpriser i kr inklusive moms, inte live-priser från Byggmax. De bygger på Byggmax prisnivå för regel och på listpriser från svenska byggvaruhus. Ändra priset i rutorna så räknas summan om. Kolla aktuella priser på <a href="https://www.byggmax.se" target="_blank" rel="noopener">byggmax.se</a> innan du beställer. Pilen ↗ vid varje pris öppnar en sökning begränsad till byggmax.se.</p>
+<div class="tools"><button class="primary" id="copy" type="button">Kopiera listan</button><button id="print" type="button">Skriv ut</button></div>
+<div id="toast"></div>
+<p class="note">Ungefärliga mängder för planering. Kontrollera alltid dimensionering av bärlinor, takstolar och förband mot ritningar och gällande regler (Boverkets byggregler, Eurokod) innan du beställer.</p>
+</div>
+</div>
+</div>
+</div>
+<script src="lib/three.min.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<script src="js/kalkyl.js"></script>
+<script src="js/priser.js"></script>
+<script src="js/3d.js"></script>
+<script src="js/el.js"></script>
+<script src="js/ritningar.js"></script>
+<script src="js/lager.js"></script>
+
+</body>
+</html>
