@@ -1,5 +1,21 @@
 /* ---------- Inloggning och sparade ritningar på servern ---------- */
 (async function(){
+  const SHT=new URLSearchParams(location.search).get('delad');
+  if(SHT){                                     // skrivskyddad delad vy, ingen inloggning
+    try{
+      const r=await fetch('/api/delad/'+encodeURIComponent(SHT)),j=await r.json();
+      if(!r.ok)throw new Error(j.fel||'Länken fungerar inte.');
+      restore(j.data);$('pjName').value='';
+      ['pjSave','pjNew','pjOpen','pjDel','pjImp'].forEach(id=>{const e=$(id);if(e)e.style.display='none';});
+      const l=$('pjList');if(l&&l.closest('label'))l.closest('label').style.display='none';
+      const nm=$('pjName');if(nm&&nm.closest('label'))nm.closest('label').style.display='none';
+      pPut=()=>false;
+      const b=document.createElement('div');b.style.cssText='position:sticky;top:0;z-index:1000;padding:8px 14px;background:var(--accent);color:var(--accent-ink);font-size:14px';
+      b.textContent='Delad ritning: '+j.name+'. Du tittar på en skrivskyddad kopia, så dina ändringar sparas inte hos ägaren.';
+      document.body.insertBefore(b,document.body.firstChild);
+    }catch(e){document.body.insertBefore(Object.assign(document.createElement('div'),{textContent:e.message,style:'padding:12px;background:#b3261e;color:#fff'}),document.body.firstChild);}
+    return;
+  }
   let me,adm=false;
   try{
     if((await (await fetch('/api/ping')).text())!=='ok')return;
@@ -21,7 +37,28 @@
   const first=$('pjName').closest('label');
   const note=document.createElement('div');note.className='note';note.style.margin='0 0 8px';
   note.textContent='Ritningar sparas på servern.'+(adm?' Andras ritningar visas som namn/ritning.':'');
-  first.parentNode.insertBefore(note,first);
+  const sb=document.createElement('div');sb.className='tools';sb.style.margin='4px 0 8px';
+  sb.innerHTML='<button type="button" id="pjShareLnk">Dela länk</button><button type="button" id="pjUnshare">Stoppa delning</button>';
+  first.parentNode.insertBefore(note,first);first.parentNode.insertBefore(sb,first);
+  const cur=()=>($('pjList').value||$('pjName').value||'').trim();
+  $('pjShareLnk').onclick=async()=>{
+    const n=cur();if(!n){pMsg('Välj eller skriv namnet på en sparad ritning.');return;}
+    try{const r=await fetch('/api/dela',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:n})}),j=await r.json();
+      if(!r.ok)throw new Error(j.fel||'Kunde inte dela.');
+      const u=location.origin+'/?delad='+j.token;
+      try{await navigator.clipboard.writeText(u);pMsg('Länk kopierad: '+u);}catch(e){pMsg('Länk: '+u);}
+      const c=$('pjCode');if(c){c.style.display='block';c.value=u;}
+    }catch(e){pMsg(e.message);}
+  };
+  $('pjUnshare').onclick=async()=>{
+    const n=cur();if(!n){pMsg('Välj en ritning.');return;}
+    try{const l=await (await fetch('/api/dela')).json();
+      const own=n.includes('/')?n.split('/'):[me,n];
+      const x=l.find(v=>v.owner===own[0]&&v.name===own.slice(1).join('/'));
+      if(!x){pMsg('Ritningen delas inte.');return;}
+      await fetch('/api/dela/'+x.token,{method:'DELETE'});pMsg('Delningen är stoppad. Länken fungerar inte längre.');
+    }catch(e){pMsg('Kunde inte stoppa delningen.');}
+  };
   topBar(me,adm);
   pList();
 })();

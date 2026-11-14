@@ -94,3 +94,12 @@ Dubbelklicka på `start-publik.bat` (Mac/Linux: `./start-publik.sh`). Det starta
 - I publikt läge är nya konton stängda: bara det första kontot (admin) kan skapas fritt, därefter skapar admin användare på `admin.html`. Priser från Byggmax kräver inloggning. Sätt `ALLOW_REGISTER=1` om du ändå vill ha öppen registrering.
 - Inloggningen skickas krypterat (HTTPS) via tunneln. Använd ett långt lösenord på adminkontot.
 - Vill du ha en fast adress som alltid är uppe utan din dator kan servern läggas på en molntjänst (till exempel en liten VPS eller Fly.io/Render med en disk för mappen `data/`).
+
+## Delning, offert, alternativ, butikslista, säkerhetskopia och mobilapp
+
+- **Dela ritning:** spara ritningen, välj den i listan och tryck *Dela länk*. Länken (`/?delad=…`) visar ritningen skrivskyddad utan konto, och ändringar du sparar syns direkt för den som har länken. *Stoppa delning* gör länken oanvändbar.
+- **Offert (PDF):** under *Offert (PDF till kund)* fyller du i namn, kund, projekt, arbetskostnad och påslag på material. Loggan (valfri) sparas i webbläsaren.
+- **Jämför alternativ:** tryck *Spara nuvarande som alternativ*, ändra ritningen och se skillnaden i kronor per del. Upp till 4 alternativ sparas med ritningen.
+- **Inköpslista per butik:** välj butik per rad, kryssa av medan du handlar och se vad som är kvar att betala. Sparas med ritningen.
+- **Säkerhetskopia:** servern kopierar `data/` till `data/backup/ÅÅÅÅ-MM-DD/` en gång per dygn och sparar 14 dagar.
+- **Installera som app:** öppna adressen på mobilen och välj *Lägg till på hemskärmen*. Kräver HTTPS (publik adress) eller `localhost`.

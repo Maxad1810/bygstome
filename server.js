@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const PUBLIC = process.env.PUBLIC === '1';   // true när appen nås utifrån via tunnel/proxy
 const PORT = +process.env.PORT || 8080, HOST = process.env.HOST || '127.0.0.1', TTL = 60 * 60 * 1000;
 const ROOT = __dirname, CACHE = new Map();
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.md': 'text/plain; charset=utf-8' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.md': 'text/plain; charset=utf-8', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 const BASE = process.env.BYGGMAX_URL || 'https://www.byggmax.se';
 
 /* Osynlig webbläsare (Playwright): Byggmax laddar priserna med JavaScript, så sidan måste "köras". */
@@ -61,7 +61,8 @@ const DATA = path.join(ROOT, 'data'); fs.mkdirSync(path.join(DATA, 'ritningar'),
 const UF = path.join(DATA, 'users.json'), SF = path.join(DATA, 'sessions.json');
 const readJ = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return d; } };
 const writeJ = (f, o) => { fs.writeFileSync(f + '.tmp', JSON.stringify(o)); fs.renameSync(f + '.tmp', f); };
-let USERS = readJ(UF, {}), SESS = readJ(SF, {});
+const HF = path.join(DATA, 'shares.json');
+let USERS = readJ(UF, {}), SESS = readJ(SF, {}), SHARES = readJ(HF, {});
 if (Object.keys(USERS).length && !Object.values(USERS).some(u => u.admin)) { USERS[Object.keys(USERS)[0]].admin = true; writeJ(UF, USERS); }
 const NAME_RE = /^[a-z0-9_-]{3,30}$/, WEEK = 30 * 24 * 3600 * 1000, TRIES = new Map();
 const hash = (pw, salt) => crypto.scryptSync(pw, salt, 64).toString('hex');
@@ -106,6 +107,12 @@ async function konto(req, res, u) {
     if (!us || !crypto.timingSafeEqual(Buffer.from(h), Buffer.from(us.hash))) { TRIES.get(ip).push(Date.now()); return send(res, 401, { fel: 'Fel användarnamn eller lösenord.' }); }
     newSession(n, res, req); return send(res, 200, { user: n, admin: !!us.admin });
   }
+  let sm = p.match(/^\/api\/delad\/([a-f0-9]{24})$/);
+  if (sm && req.method === 'GET') {                       // publik, skrivskyddad
+    const sh = SHARES[sm[1]]; if (!sh) return send(res, 404, { fel: 'Länken finns inte eller har tagits bort.' });
+    const d = loadD(sh.owner)[sh.name]; if (!d) return send(res, 404, { fel: 'Ritningen finns inte längre.' });
+    return send(res, 200, { name: sh.name, data: d });
+  }
   const w = who(req); if (!w) return send(res, 401, { fel: 'Inte inloggad.' });
   const adm = !!(USERS[w] && USERS[w].admin);
   if (p === '/api/ritningar' && req.method === 'GET') {
@@ -124,6 +131,24 @@ async function konto(req, res, u) {
       if (Object.keys(d).length >= 200 && !(name in d)) return send(res, 400, { fel: 'För många sparade ritningar.' });
       d[name] = b; writeJ(dfile(owner), d); return send(res, 200, { ok: 1 }); }
     if (req.method === 'DELETE') { delete d[name]; writeJ(dfile(owner), d); return send(res, 200, { ok: 1 }); }
+  }
+  if (p === '/api/dela' && req.method === 'GET') {
+    return send(res, 200, Object.entries(SHARES).filter(([, v]) => adm || v.owner === w).map(([t, v]) => ({ token: t, owner: v.owner, name: v.name })));
+  }
+  if (p === '/api/dela' && req.method === 'POST') {
+    const b = await body(req); let name = String(b.name || '').slice(0, 80), owner = w;
+    const t = name.match(/^([a-z0-9_-]{3,30})\/(.+)$/);
+    if (adm && t && USERS[t[1]] && t[1] !== w) { owner = t[1]; name = t[2].slice(0, 60); }
+    if (!(name in loadD(owner))) return send(res, 404, { fel: 'Spara ritningen först, sedan kan du dela den.' });
+    let tok = Object.keys(SHARES).find(k => SHARES[k].owner === owner && SHARES[k].name === name);
+    if (!tok) { tok = crypto.randomBytes(12).toString('hex'); SHARES[tok] = { owner, name, skapad: new Date().toISOString() }; writeJ(HF, SHARES); }
+    return send(res, 200, { token: tok });
+  }
+  sm = p.match(/^\/api\/dela\/([a-f0-9]{24})$/);
+  if (sm && req.method === 'DELETE') {
+    const x = SHARES[sm[1]]; if (!x) return send(res, 404, { fel: 'Länken finns inte.' });
+    if (x.owner !== w && !adm) return send(res, 403, { fel: 'Inte din länk.' });
+    delete SHARES[sm[1]]; writeJ(HF, SHARES); return send(res, 200, { ok: 1 });
   }
   const am = p.match(/^\/api\/admin\/([a-z]+)(?:\/([a-z0-9_-]{3,30}))?$/);
   if (am) {
@@ -154,13 +179,27 @@ async function konto(req, res, u) {
     }
     if (act === 'delete' && req.method === 'POST') {
       if (tu === w) return send(res, 400, { fel: 'Du kan inte ta bort dig själv.' });
-      delete USERS[tu]; writeJ(UF, USERS); try { fs.unlinkSync(dfile(tu)); } catch (e) {}
+      delete USERS[tu]; writeJ(UF, USERS); for (const k of Object.keys(SHARES)) if (SHARES[k].owner === tu) delete SHARES[k]; writeJ(HF, SHARES); try { fs.unlinkSync(dfile(tu)); } catch (e) {}
       for (const k of Object.keys(SESS)) if (SESS[k].u === tu) delete SESS[k]; writeJ(SF, SESS);
       return send(res, 200, { ok: 1 });
     }
   }
   return send(res, 404, { fel: 'Okänd adress.' });
 }
+
+/* ---------- Säkerhetskopia: en datumstämplad kopia per dygn, 14 dagar sparas ---------- */
+function backup() {
+  try {
+    const dir = path.join(DATA, 'backup'), day = new Date().toISOString().slice(0, 10), to = path.join(dir, day);
+    if (fs.existsSync(to)) return;
+    fs.mkdirSync(to, { recursive: true });
+    for (const f of ['users.json', 'shares.json']) if (fs.existsSync(path.join(DATA, f))) fs.copyFileSync(path.join(DATA, f), path.join(to, f));
+    fs.cpSync(path.join(DATA, 'ritningar'), path.join(to, 'ritningar'), { recursive: true });
+    fs.readdirSync(dir).filter(n => /^\d{4}-\d{2}-\d{2}$/.test(n)).sort().slice(0, -14).forEach(n => fs.rmSync(path.join(dir, n), { recursive: true, force: true }));
+    console.log('Säkerhetskopia sparad: data/backup/' + day);
+  } catch (e) { console.error('Säkerhetskopian misslyckades:', e.message); }
+}
+backup(); setInterval(backup, 3600 * 1000).unref();
 
 const srv = http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
