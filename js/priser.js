@@ -7,7 +7,7 @@ const mmOf=n=>{const m=n.match(/(\d+) mm/);return m?+m[1]:145;};
 const RULES=[
  [/^Takstolar /,'st',()=>1500],
  [/^(Limträsparrar|Limträ nockbalk)/,'lm',n=>LUM[hOf(n)]||230],
- [/^(Reglar|Syll och|Bärlinor|Fönsterbröstregel|Bjälkar|Randbjälkar|Däcksbjälkar|Randbjälke|Handledare|Trappvangar)/,'lm',n=>LUM[hOf(n)]||52],
+ [/^(Reglar|Syll och|Bärlinor|Fönsterbröstregel|Bjälkar|Randbjälkar|Däcksbjälkar|Randbjälke|Handledare|Trappvangar|Balkongbjälkar|Stödstolpar|Bärbalk|Takbjälkar|Ledger|Stolpar|Limträbalk)/,'lm',n=>LUM[hOf(n)]||52],
  [/^Plintar/,'st',()=>129],[/^Plintpapp/,'st',()=>15],
  [/^(Takstolsbeslag|Sparrbeslag)/,'st',()=>20],[/^Bjälkskor/,'st',()=>25],
  [/^Vindskydd under/,'m²',()=>18],[/^Isolering/,'m²',n=>INS[mmOf(n)]||80],[/^Ångspärr/,'m²',()=>8],
@@ -20,12 +20,12 @@ const RULES=[
  [/^Ströläkt fasad/,'m',()=>14],[/^Insektsnät/,'m',()=>35],[/^Fasadpanel/,'m',()=>27],[/^Hörnbrädor/,'st',()=>120],
  [/^Underlagstak\/råspont/,'m²',()=>130],[/^Underlagspapp/,'rull',()=>349],
  [/^Ströläkt 25/,'m',()=>10],[/^Tvärläkt/,'m',()=>14],
- [/^Takplåt$/,'plat',()=>189],[/^Takskruv/,'st',()=>1.2],
+ [/^Takplåt$/,'plat',()=>189],[/^Takplåt \(/,'m²',()=>189],[/^Lameller/,'m',()=>14],[/^Ränndalsbräda/,'m',()=>40],[/^Ränndals/,'m',()=>95],[/^Takskruv/,'st',()=>1.2],
  [/^Vindskiva \(trä\)/,'lm',()=>32],[/^Vindskiveplåt/,'st',()=>119],[/^Takfotsplåt/,'st',()=>99],[/^Nockplåt/,'st',()=>149],
  [/^Snörasskydd, rör/,'st',()=>149],[/^Snörasskyddskonsoler/,'st',()=>59],[/^Ändlock/,'st',()=>15],
  [/^Hängrännor/,'st',()=>129],[/^Rännkrokar/,'st',()=>22],[/^Stuprör/,'st',()=>149],[/^Utlopp/,'st',()=>79],
  [/^Eluttag/,'st',()=>69],[/^Strömbrytare/,'st',()=>59],[/^Taklamputtag/,'st',()=>39],[/^Lamputtag/,'st',()=>39],[/^Elcentral/,'st',()=>1490],[/^Matarkabel/,'m',()=>85],
- [/^Ankarbult/,'st',()=>22],[/^Däcksplank/,'m',()=>28],[/^Däckskruv/,'st',()=>.5],[/^Räckesstolpar/,'st',()=>99],[/^Trappsteg/,'m',()=>28],[/^Apparatdosa/,'st',()=>12],
+ [/^Ankarbult/,'st',()=>22],[/^Garageport/,'st',()=>9900],[/^Dränerande/,'m3',()=>450],[/^Cellplast/,'m²',()=>120],[/^Armeringsnät/,'m²',()=>35],[/^Betong/,'m3',()=>1800],[/^Kantelement/,'m',()=>25],[/^Däcksplank/,'m',()=>28],[/^Däckskruv/,'st',()=>.5],[/^Räckesstolpar/,'st',()=>99],[/^Trappsteg/,'m',()=>28],[/^Apparatdosa/,'st',()=>12],
  [/^Kabel 3G2/,'m',()=>17],[/^Kabel 3G1/,'m',()=>11],[/^Installationsrör/,'m',()=>9],[/^Kabelklammor/,'st',()=>.6]
 ];
 function bmUrl(name){
@@ -39,7 +39,7 @@ function bmUrl(name){
   else if(/^Dörr\s\d/.test(name))q='ytterdörr';
   return 'https://www.google.com/search?q='+encodeURIComponent('site:byggmax.se '+q);
 }
-const UNIT={lm:'kr/m',plat:'kr/m²','st':'kr/st','m':'kr/m','m²':'kr/m²',rull:'kr/rulle'};
+const UNIT={lm:'kr/m',plat:'kr/m²','st':'kr/st','m':'kr/m','m²':'kr/m²','m3':'kr/m³',rull:'kr/rulle'};
 function rowCost(r){return r.mode?r.p*r.q*((r.mode==='lm'||r.mode==='plat')?r.len:1):0;}
 function totals(){
   let g=0;const s={};
@@ -67,5 +67,6 @@ function renderRes(sec){
   });
   h+='<tr class="sec gt"><td colspan="3">Totalt (inkl. moms)</td><td class="n" id="gt"></td></tr></tbody>';
   $('res').innerHTML=h;totals();
+  try{renderCut();renderCats();renderBygg();renderStruct();}catch(e){console.error(e);}
 }
-$('res').addEventListener('input',e=>{const t=e.target,i=t.dataset.r;if(i==null)return;const r=ROWS[+i];r.p=parseFloat(t.value)||0;PRICE_OV[r.key]=r.p;totals();});
+$('res').addEventListener('input',e=>{const t=e.target,i=t.dataset.r;if(i==null)return;const r=ROWS[+i];r.p=parseFloat(t.value)||0;PRICE_OV[r.key]=r.p;totals();try{renderCats();}catch(e){}});
