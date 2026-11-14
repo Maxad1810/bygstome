@@ -5,27 +5,19 @@
   const tbl=$('res').closest('.scroll');tbl.parentNode.insertBefore(box,tbl);
   const msg=t=>{$('liveMsg').textContent=t;};
   let busy=false;
-  const lenOf=n=>{
-    let m=n.match(/(\d{3,5})\s*mm/i);if(m&&+m[1]>=1000)return +m[1]/1000;
-    m=n.match(/(\d+(?:[.,]\d+)?)\s*m\b/i);if(m&&+m[1]>=1&&+m[1]<=8)return parseFloat(m[1].replace(',','.'));
-    m=n.match(/x\d+\s*[x×]\s*(\d{3,5})/i);if(m&&+m[1]>=1000)return +m[1]/1000;
-    return 0;
-  };
-  const dimOf=n=>(n.match(/(\d+)\s*[x×]\s*(\d+)/)||[]);
+  const MEMO={};
   async function one(r){
     if(r.mode!=='lm'&&r.mode!=='m')return null;
     const dim=(r.name.match(/\d+x\d+/)||[''])[0];if(!dim)return null;
-    const j=await (await fetch('/api/pris?q='+encodeURIComponent(bmQ(r.name)))).json();
-    if(j.fel)throw new Error(j.fel);
-    const [a,b]=dim.split('x'),best=(j.produkter||[]).map(p=>{
-      const d=dimOf(p.name),L=lenOf(p.name);
-      const ok=d.length&&((d[1]===a&&d[2]===b)||(d[1]===b&&d[2]===a));
-      return ok&&L?{kr:p.price/L,p}:null;
-    }).filter(Boolean).sort((x,y)=>x.kr-y.kr)[0];
-    return best?Math.round(best.kr*100)/100:null;
+    const q=bmQ(r.name);
+    if(!(q in MEMO))MEMO[q]=await (await fetch('/api/pris?q='+encodeURIComponent(q))).json();
+    const j=MEMO[q];if(j.fel)throw new Error(j.fel);
+    const [a,b]=dim.split('x'),re=new RegExp('(^|\\D)('+a+'\\s*[x×]\\s*'+b+'|'+b+'\\s*[x×]\\s*'+a+')(\\D|$)','i');
+    const p=(j.produkter||[]).find(p=>p.unit==='m'&&re.test(p.name));
+    return p?p.price:null;
   }
   async function run(){
-    if(busy)return;busy=true;$('liveBtn').disabled=true;msg('Hämtar …');
+    if(busy)return;busy=true;$('liveBtn').disabled=true;msg('Hämtar … (det kan ta någon minut)');for(const k in MEMO)delete MEMO[k];
     let ok=0,miss=0,err='';
     for(const [i,r] of ROWS.entries()){
       try{
