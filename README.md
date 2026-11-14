@@ -77,3 +77,10 @@ Med servern igång öppnas först `login.html`. Skapa ett konto eller logga in, 
 - Lösenord sparas som hash (scrypt), aldrig i klartext. Inloggningen gäller i 30 dagar.
 - Servern lyssnar bara på din egen dator (`127.0.0.1`). Vill du nå den från mobilen i samma nät, starta med `HOST=0.0.0.0 node server.js` (Windows: `set HOST=0.0.0.0` först). Använd bara det i ett nät du litar på, eftersom anslutningen inte är krypterad (HTTP).
 - Säkerhetskopiera mappen `data/` om du vill behålla ritningarna.
+
+## Administratör
+
+Det **första kontot** som skapas blir administratör. (Finns redan konton utan admin blir det äldsta kontot admin när servern startar.) Admin:
+- ser alla användares ritningar i appens lista som `användare/ritning`, och kan öppna, ändra, spara och ta bort dem
+- har en sida `admin.html` (länk "Admin" i appen) där man kan göra andra till admin, sätta nytt lösenord åt någon och ta bort konton
+- kan inte ta bort sig själv eller sin egen adminrätt

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin – Stomkalkyl</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+main{max-width:760px;margin:24px auto;padding:0 16px}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+td small{display:block;color:var(--muted)}
+td button{padding:5px 9px;margin:2px 2px 2px 0;font-size:14px}
+#msg{min-height:1.4em;margin:8px 0}
+</style>
+</head>
+<body>
+<main><div class="panel">
+<h1>Admin</h1>
+<p><a href="/">← Tillbaka till appen</a></p>
+<div id="msg" role="status" class="note"></div>
+<div class="scroll"><table><thead><tr><th>Användare</th><th>Ritningar</th><th>Åtgärder</th></tr></thead><tbody id="rows"></tbody></table></div>
+<p class="note">Som admin ser du alla användares ritningar i appens lista som <i>användare/ritning</i> och kan öppna, ändra och ta bort dem där.</p>
+</div></main>
+<script>
+const $=id=>document.getElementById(id);let ME='',ARM=null;
+const msg=t=>{$('msg').textContent=t;};
+async function api(u,m,b){const r=await fetch(u,{method:m||'GET',headers:{'content-type':'application/json'},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.fel||('Fel '+r.status));return j;}
+async function load(){
+  try{
+    const me=await api('/api/me');if(!me.user){location.href='/login.html';return;}if(!me.admin){msg('Du är inte administratör.');return;}ME=me.user;
+    const us=await api('/api/admin/users');const tb=$('rows');tb.innerHTML='';
+    us.forEach(u=>{
+      const tr=document.createElement('tr'),c1=document.createElement('td'),c2=document.createElement('td'),c3=document.createElement('td');
+      c1.textContent=u.user+(u.admin?' (admin)':'')+(u.user===ME?' – du':'');
+      c2.textContent=u.antal+' st';const sm=document.createElement('small');sm.textContent=u.namn.join(', ');c2.appendChild(sm);
+      const mk=(t,f)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.onclick=()=>f(b);c3.appendChild(b);};
+      if(u.user!==ME){
+        mk(u.admin?'Ta bort admin':'Gör till admin',async()=>{try{await api('/api/admin/admin/'+u.user,'POST',{admin:!u.admin});await load();}catch(e){msg(e.message);}});
+        mk('Nytt lösenord',async()=>{const pw=prompt('Nytt lösenord för '+u.user+' (minst 6 tecken):');if(!pw)return;try{await api('/api/admin/pw/'+u.user,'POST',{pw});msg('Lösenordet för '+u.user+' är ändrat.');}catch(e){msg(e.message);}});
+        mk('Ta bort konto',async b=>{if(ARM!==u.user){ARM=u.user;b.textContent='Klicka igen för att ta bort';setTimeout(()=>{ARM=null;b.textContent='Ta bort konto';},4000);return;}try{await api('/api/admin/delete/'+u.user,'POST',{});ARM=null;msg('Tog bort '+u.user+'.');await load();}catch(e){msg(e.message);}});
+      }else mk('Ändra mitt lösenord',async()=>{const pw=prompt('Nytt lösenord (minst 6 tecken):');if(!pw)return;try{await api('/api/admin/pw/'+u.user,'POST',{pw});msg('Ditt lösenord är ändrat.');}catch(e){msg(e.message);}});
+      tr.append(c1,c2,c3);tb.appendChild(tr);
+    });
+  }catch(e){msg(e.message);}
+}
+load();
+</script>
+</body>
+</html>

@@ -1,9 +1,9 @@
 /* ---------- Inloggning och sparade ritningar på servern ---------- */
 (async function(){
-  let me;
+  let me,adm=false;
   try{
     if((await (await fetch('/api/ping')).text())!=='ok')return;
-    me=(await (await fetch('/api/me')).json()).user;
+    const j0=await (await fetch('/api/me')).json();me=j0.user;adm=!!j0.admin;
   }catch(e){return;}                       // ingen server: fortsätt som vanligt
   let skip=false;try{skip=sessionStorage.getItem('sk-skip')==='1';}catch(e){}
   if(!me){if(!skip)location.href='/login.html';return;}
@@ -19,7 +19,7 @@
     return true;
   };
   const bar=document.createElement('div');bar.className='note';bar.style.cssText='display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0 0 8px';
-  bar.innerHTML='<span>Inloggad som <b></b>. Ritningar sparas på servern.</span><button type="button">Logga ut</button>';
+  bar.innerHTML='<span>Inloggad som <b></b>'+(adm?' (admin)':'')+'. Ritningar sparas på servern.'+(adm?' Andras ritningar visas som <i>namn/ritning</i>.':'')+'</span><span>'+(adm?'<a href="/admin.html">Admin</a> ':'')+'<button type="button">Logga ut</button></span>';
   bar.querySelector('b').textContent=me;
   bar.querySelector('button').onclick=async()=>{try{await fetch('/api/logout',{method:'POST'});}catch(e){}try{sessionStorage.removeItem('sk-skip');}catch(e){}location.href='/login.html';};
   const first=$('pjName').closest('label');first.parentNode.insertBefore(bar,first);

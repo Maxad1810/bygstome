@@ -61,6 +61,7 @@ const UF = path.join(DATA, 'users.json'), SF = path.join(DATA, 'sessions.json');
 const readJ = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return d; } };
 const writeJ = (f, o) => { fs.writeFileSync(f + '.tmp', JSON.stringify(o)); fs.renameSync(f + '.tmp', f); };
 let USERS = readJ(UF, {}), SESS = readJ(SF, {});
+if (Object.keys(USERS).length && !Object.values(USERS).some(u => u.admin)) { USERS[Object.keys(USERS)[0]].admin = true; writeJ(UF, USERS); }
 const NAME_RE = /^[a-z0-9_-]{3,30}$/, WEEK = 30 * 24 * 3600 * 1000, TRIES = new Map();
 const hash = (pw, salt) => crypto.scryptSync(pw, salt, 64).toString('hex');
 const dfile = u => path.join(DATA, 'ritningar', u + '.json');
@@ -82,7 +83,7 @@ function limited(ip) { const now = Date.now(), a = (TRIES.get(ip) || []).filter(
 
 async function konto(req, res, u) {
   const p = u.pathname, ip = req.socket.remoteAddress || '';
-  if (p === '/api/me') { const w = who(req); return send(res, 200, { user: w }); }
+  if (p === '/api/me') { const w = who(req); return send(res, 200, { user: w, admin: !!(w && USERS[w] && USERS[w].admin) }); }
   if (p === '/api/logout' && req.method === 'POST') {
     const m = (req.headers.cookie || '').match(/sk=([a-f0-9]{64})/); if (m) { delete SESS[m[1]]; writeJ(SF, SESS); }
     res.setHeader('set-cookie', 'sk=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); return send(res, 200, { ok: 1 });
@@ -94,23 +95,57 @@ async function konto(req, res, u) {
       if (!NAME_RE.test(n)) return send(res, 400, { fel: 'Användarnamn: 3–30 tecken, a–z, 0–9, _ och -.' });
       if (pw.length < 6 || pw.length > 200) return send(res, 400, { fel: 'Lösenordet måste vara minst 6 tecken.' });
       if (USERS[n]) return send(res, 409, { fel: 'Användarnamnet är upptaget.' });
-      const salt = crypto.randomBytes(16).toString('hex'); USERS[n] = { salt, hash: hash(pw, salt) }; writeJ(UF, USERS);
-      newSession(n, res); return send(res, 200, { user: n });
+      const salt = crypto.randomBytes(16).toString('hex'); const first = !Object.keys(USERS).length; USERS[n] = { salt, hash: hash(pw, salt) }; if (first) USERS[n].admin = true; writeJ(UF, USERS);
+      newSession(n, res); return send(res, 200, { user: n, admin: !!USERS[n].admin });
     }
     const us = NAME_RE.test(n) && USERS[n], h = hash(pw, us ? us.salt : '00'.repeat(16));
     if (!us || !crypto.timingSafeEqual(Buffer.from(h), Buffer.from(us.hash))) { TRIES.get(ip).push(Date.now()); return send(res, 401, { fel: 'Fel användarnamn eller lösenord.' }); }
-    newSession(n, res); return send(res, 200, { user: n });
+    newSession(n, res); return send(res, 200, { user: n, admin: !!us.admin });
   }
   const w = who(req); if (!w) return send(res, 401, { fel: 'Inte inloggad.' });
-  if (p === '/api/ritningar' && req.method === 'GET') return send(res, 200, loadD(w));
+  const adm = !!(USERS[w] && USERS[w].admin);
+  if (p === '/api/ritningar' && req.method === 'GET') {
+    const d = loadD(w);
+    if (adm) for (const o of Object.keys(USERS)) if (o !== w) { const x = loadD(o); for (const k of Object.keys(x)) d[o + '/' + k] = x[k]; }
+    return send(res, 200, d);
+  }
   const m = p.match(/^\/api\/ritningar\/(.+)$/);
   if (m) {
-    const name = decodeURIComponent(m[1]).slice(0, 60), d = loadD(w);
+    let name = decodeURIComponent(m[1]).slice(0, 80), owner = w;
+    const t = name.match(/^([a-z0-9_-]{3,30})\/(.+)$/);
+    if (adm && t && USERS[t[1]] && t[1] !== w) { owner = t[1]; name = t[2].slice(0, 60); } else name = name.slice(0, 60);
+    const d = loadD(owner);
     if (!name.trim()) return send(res, 400, { fel: 'Namn saknas.' });
     if (req.method === 'PUT') { const b = await body(req); if (!b || typeof b !== 'object' || !b.f) return send(res, 400, { fel: 'Ogiltig ritning.' });
       if (Object.keys(d).length >= 200 && !(name in d)) return send(res, 400, { fel: 'För många sparade ritningar.' });
-      d[name] = b; writeJ(dfile(w), d); return send(res, 200, { ok: 1 }); }
-    if (req.method === 'DELETE') { delete d[name]; writeJ(dfile(w), d); return send(res, 200, { ok: 1 }); }
+      d[name] = b; writeJ(dfile(owner), d); return send(res, 200, { ok: 1 }); }
+    if (req.method === 'DELETE') { delete d[name]; writeJ(dfile(owner), d); return send(res, 200, { ok: 1 }); }
+  }
+  const am = p.match(/^\/api\/admin\/([a-z]+)(?:\/([a-z0-9_-]{3,30}))?$/);
+  if (am) {
+    if (!adm) return send(res, 403, { fel: 'Bara administratörer.' });
+    const [, act, tu] = am;
+    if (act === 'users' && req.method === 'GET' && !tu)
+      return send(res, 200, Object.keys(USERS).map(u => ({ user: u, admin: !!USERS[u].admin, antal: Object.keys(loadD(u)).length, namn: Object.keys(loadD(u)) })));
+    if (!tu || !USERS[tu]) return send(res, 404, { fel: 'Användaren finns inte.' });
+    if (act === 'admin' && req.method === 'POST') {
+      const b = await body(req);
+      if (tu === w && !b.admin) return send(res, 400, { fel: 'Du kan inte ta bort din egen adminrätt.' });
+      USERS[tu].admin = !!b.admin; writeJ(UF, USERS); return send(res, 200, { ok: 1 });
+    }
+    if (act === 'pw' && req.method === 'POST') {
+      const b = await body(req), pw = String(b.pw || '');
+      if (pw.length < 6 || pw.length > 200) return send(res, 400, { fel: 'Lösenordet måste vara minst 6 tecken.' });
+      const salt = crypto.randomBytes(16).toString('hex'); USERS[tu].salt = salt; USERS[tu].hash = hash(pw, salt); writeJ(UF, USERS);
+      for (const k of Object.keys(SESS)) if (SESS[k].u === tu && tu !== w) delete SESS[k]; writeJ(SF, SESS);
+      return send(res, 200, { ok: 1 });
+    }
+    if (act === 'delete' && req.method === 'POST') {
+      if (tu === w) return send(res, 400, { fel: 'Du kan inte ta bort dig själv.' });
+      delete USERS[tu]; writeJ(UF, USERS); try { fs.unlinkSync(dfile(tu)); } catch (e) {}
+      for (const k of Object.keys(SESS)) if (SESS[k].u === tu) delete SESS[k]; writeJ(SF, SESS);
+      return send(res, 200, { ok: 1 });
+    }
   }
   return send(res, 404, { fel: 'Okänd adress.' });
 }
