@@ -115,7 +115,7 @@ async function konto(req, res, u) {
   return send(res, 404, { fel: 'Okänd adress.' });
 }
 
-http.createServer(async (req, res) => {
+const srv = http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   if (u.pathname.startsWith('/api/') && u.pathname !== '/api/pris' && u.pathname !== '/api/ping') {
     try { return await konto(req, res, u); } catch (e) { return send(res, 400, { fel: String(e.message || e) }); }
@@ -137,5 +137,21 @@ http.createServer(async (req, res) => {
     if (e) { res.statusCode = 404; return res.end('404'); }
     res.setHeader('content-type', TYPES[path.extname(full)] || 'application/octet-stream'); res.end(b);
   });
-}).listen(PORT, HOST, () => console.log('Stomkalkyl körs på http://localhost:' + PORT + '  (Ctrl+C avslutar)'));
+});
+srv.on('listening', () => {
+  const url = 'http://localhost:' + srv.address().port;
+  console.log('\nStomkalkyl körs på ' + url + '  (Ctrl+C eller stäng fönstret avslutar)\n');
+  if (!process.env.NO_OPEN) {
+    const { exec } = require('child_process');
+    exec(process.platform === 'win32' ? 'start "" ' + url : process.platform === 'darwin' ? 'open ' + url : 'xdg-open ' + url, () => {});
+  }
+});
+function start(port, left) {
+  srv.once('error', e => {
+    if (e.code === 'EADDRINUSE' && left > 0) { console.log('Port ' + port + ' används redan (en äldre Stomkalkyl-server är troligen igång). Provar ' + (port + 1) + ' …'); start(port + 1, left - 1); }
+    else { console.error('Kunde inte starta:', e.message); process.exit(1); }
+  });
+  srv.listen(port, HOST);
+}
+start(PORT, 10);
 module.exports = {};
