@@ -69,3 +69,11 @@ Skripten delar variabler och laddas i den ordning som står i `index.html`.
 3. Appen öppnas på http://localhost:8080. Knappen **Hämta live-priser från Byggmax** visas ovanför inköpslistan. Hämtningen tar någon minut, och sedan uppdateras priserna automatiskt varje timme.
 
 Live-priser hämtas för virke och limträ (kr/m, butiken som Byggmax väljer åt dig). Övriga rader har riktpriser du kan ändra för hand. Utan server (till exempel `index.html` direkt eller GitHub Pages) fungerar allt utom live-knappen.
+
+## Konton och sparade ritningar på servern
+
+Med servern igång öppnas först `login.html`. Skapa ett konto eller logga in, så sparas dina ritningar på servern (mappen `data/`) och kan öppnas från vilken webbläsare som helst som når servern. Via "Fortsätt utan att logga in" sparas ritningar bara i den webbläsaren, som förut.
+
+- Lösenord sparas som hash (scrypt), aldrig i klartext. Inloggningen gäller i 30 dagar.
+- Servern lyssnar bara på din egen dator (`127.0.0.1`). Vill du nå den från mobilen i samma nät, starta med `HOST=0.0.0.0 node server.js` (Windows: `set HOST=0.0.0.0` först). Använd bara det i ett nät du litar på, eftersom anslutningen inte är krypterad (HTTP).
+- Säkerhetskopiera mappen `data/` om du vill behålla ritningarna.

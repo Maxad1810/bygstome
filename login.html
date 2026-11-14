@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logga in – Stomkalkyl</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.lg{max-width:380px;margin:8vh auto;padding:0 16px}
+.lg h1{margin:0 0 4px}
+.lg .tabs{display:flex;gap:8px;margin:16px 0}
+.lg .tabs button{flex:1}
+.lg .tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.lg label{display:block;margin:10px 0}
+#err{color:#b3261e;min-height:1.4em;margin:8px 0}
+@media (prefers-color-scheme:dark){#err{color:#ffb4ab}}
+</style>
+</head>
+<body>
+<main class="lg"><div class="panel">
+<h1>Stomkalkyl</h1>
+<p class="note">Logga in för att spara dina ritningar på servern och öppna dem från vilken enhet som helst.</p>
+<div class="tabs" role="group" aria-label="Val">
+<button type="button" id="tLogin" aria-pressed="true">Logga in</button>
+<button type="button" id="tReg" aria-pressed="false">Skapa konto</button>
+</div>
+<form id="f">
+<label>Användarnamn<input id="u" autocomplete="username" required minlength="3" maxlength="30" autocapitalize="none" spellcheck="false"></label>
+<label>Lösenord<input id="p" type="password" autocomplete="current-password" required minlength="6" maxlength="200"></label>
+<div id="err" role="alert"></div>
+<button class="primary" id="go" type="submit" style="width:100%">Logga in</button>
+</form>
+<p class="note" style="margin-top:14px"><a href="/" id="skip">Fortsätt utan att logga in</a> (ritningar sparas då bara i den här webbläsaren)</p>
+</div></main>
+<script>
+const $=id=>document.getElementById(id);let reg=false;
+function mode(r){reg=r;$('tLogin').setAttribute('aria-pressed',!r);$('tReg').setAttribute('aria-pressed',r);$('go').textContent=r?'Skapa konto':'Logga in';$('p').autocomplete=r?'new-password':'current-password';$('err').textContent='';}
+$('tLogin').onclick=()=>mode(false);$('tReg').onclick=()=>mode(true);
+$('skip').onclick=()=>{try{sessionStorage.setItem('sk-skip','1');}catch(e){}};
+$('f').onsubmit=async e=>{
+  e.preventDefault();$('go').disabled=true;$('err').textContent='';
+  try{
+    const r=await fetch(reg?'/api/register':'/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({user:$('u').value,pw:$('p').value})});
+    const j=await r.json();
+    if(!r.ok)throw new Error(j.fel||'Något gick fel.');
+    location.href='/';
+  }catch(x){$('err').textContent=x.message==='Failed to fetch'?'Hittar ingen server. Starta start.bat eller start.sh.':x.message;$('go').disabled=false;}
+};
+</script>
+</body>
+</html>
