@@ -28,7 +28,7 @@ const RULES=[
  [/^Ankarbult/,'st',()=>22],[/^Garageport/,'st',()=>9900],[/^Dränerande/,'m3',()=>450],[/^Cellplast/,'m²',()=>120],[/^Armeringsnät/,'m²',()=>35],[/^Betong/,'m3',()=>1800],[/^Kantelement/,'m',()=>25],[/^Däcksplank/,'m',()=>28],[/^Däckskruv/,'st',()=>.5],[/^Räckesstolpar/,'st',()=>99],[/^Trappsteg/,'m',()=>28],[/^Apparatdosa/,'st',()=>12],
  [/^Kabel 3G2/,'m',()=>17],[/^Kabel 3G1/,'m',()=>11],[/^Installationsrör/,'m',()=>9],[/^Kabelklammor/,'st',()=>.6]
 ];
-function bmUrl(name){
+function bmQ(name){
   const dim=(name.match(/\d+x\d+/)||[''])[0];
   let q=name.replace(/\(.*?\)/g,'').replace(/×/g,'x').replace(/\b(ytterväggar|innerväggar)\b/g,'').replace(/\s+/g,' ').trim();
   if(/^(Reglar|Syll och|Fönsterbröstregel)/.test(name)&&dim)q='regel '+dim;
@@ -37,8 +37,9 @@ function bmUrl(name){
   else if(/^Limträ/.test(name)&&dim)q='limträbalk '+dim;
   else if(/^Fönster\s\d/.test(name))q='fönster';
   else if(/^Dörr\s\d/.test(name))q='ytterdörr';
-  return 'https://www.google.com/search?q='+encodeURIComponent('site:byggmax.se '+q);
+  return q;
 }
+function bmUrl(name){return 'https://www.google.com/search?q='+encodeURIComponent('site:byggmax.se '+bmQ(name));}
 const UNIT={lm:'kr/m',plat:'kr/m²','st':'kr/st','m':'kr/m','m²':'kr/m²','m3':'kr/m³',rull:'kr/rulle'};
 function rowCost(r){return r.mode?r.p*r.q*((r.mode==='lm'||r.mode==='plat')?r.len:1):0;}
 function totals(){

@@ -61,3 +61,11 @@ Skripten delar variabler och laddas i den ordning som står i `index.html`.
 - Priserna är riktpriser. Kontrollera på byggmax.se innan du beställer.
 - Mängderna är ungefärliga. Kontrollera bjälklag, balkar och takstolar mot konstruktionsritning.
 - Elinstallation får bara göras av behörig elinstallatör.
+
+## Köra på din egen dator (med live-priser)
+
+1. Installera Node.js (nodejs.org, version 18 eller nyare).
+2. Windows: dubbelklicka på `start.bat`. Mac/Linux: kör `./start.sh`.
+3. Appen öppnas på http://localhost:8080. Knappen **Hämta live-priser från Byggmax** visas ovanför inköpslistan, och priserna uppdateras sedan automatiskt varje timme.
+
+Live-priser hämtas för virke och limträ (kr/m). Övriga rader har riktpriser du kan ändra för hand. Utan server (till exempel `index.html` direkt eller GitHub Pages) fungerar allt utom live-prisknappen.
