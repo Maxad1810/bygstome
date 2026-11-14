@@ -128,3 +128,9 @@ Gör en gång:
 Därefter startar du appen med `start-doman.bat` (Mac/Linux: `./start-doman.sh`). Samma skydd som i publikt läge gäller.
 
 Obs: `stomkal.kyl.se` skulle kräva att du äger domänen `kyl.se`. Det gör du troligen inte, så välj en egen, till exempel `stomkalkyl.se`.
+
+## Jämför priser mellan butiker
+
+Under *Inköpslista per butik* finns knappen **Jämför priser mellan butiker**. Servern slår upp virke och limträ (kr/m) hos Byggmax, Bauhaus, Beijer och Hornbach med den osynliga webbläsaren, visar billigast per rad och vad allt kostar hos varje butik. *Välj billigaste butik och pris per rad* fyller i butik och pris åt dig. Hämtningen tar flera minuter första gången (svaren sparas i en timme) och kräver att servern körs och att du är inloggad.
+
+Butikernas sidor ser olika ut och kan ändras, så träffarna är bäst-möjligt. Rader som en butik saknar visas med "–". Kontrollera alltid priset i butiken innan du köper.

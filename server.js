@@ -7,7 +7,8 @@ const PUBLIC = process.env.PUBLIC === '1';   // true när appen nås utifrån vi
 const PORT = +process.env.PORT || 8080, HOST = process.env.HOST || '127.0.0.1', TTL = 60 * 60 * 1000;
 const ROOT = __dirname, CACHE = new Map();
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.md': 'text/plain; charset=utf-8', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
-const BASE = process.env.BYGGMAX_URL || 'https://www.byggmax.se';
+const STORE_URL = Object.assign({ Byggmax: process.env.BYGGMAX_URL || 'https://www.byggmax.se', Bauhaus: 'https://www.bauhaus.se', Beijer: 'https://www.beijerbygg.se', Hornbach: 'https://www.hornbach.se' }, JSON.parse(process.env.STORE_URLS || '{}'));
+const lenOf = n => { let m = n.match(/(\d{3,5})\s*mm/i); if (m && +m[1] >= 1000) return +m[1] / 1000; m = n.match(/(\d+(?:[.,]\d+)?)\s*m\b/i); if (m && +m[1] >= 1 && +m[1] <= 8) return parseFloat(m[1].replace(',', '.')); return 0; };
 
 /* Osynlig webbläsare (Playwright): Byggmax laddar priserna med JavaScript, så sidan måste "köras". */
 let BR = null, QUEUE = Promise.resolve();
@@ -21,13 +22,15 @@ const PRICE = /(\d[\d\s]*[.,]\d{1,2}|\d{2,5})\s*(?:kr|:-)\s*\/?\s*(m²|m2|m|st)?
 const toNum = s => parseFloat(String(s).replace(/\s/g, '').replace(',', '.'));
 const unitOf = u => !u ? '' : u.toLowerCase() === 'm2' ? 'm²' : u.toLowerCase();
 
-async function hamta(q) {
+async function hamta(q, BASE) {
   const b = await browser(), ctx = await b.newContext({ locale: 'sv-SE', userAgent: 'Mozilla/5.0 (X11; Linux x86_64) Chrome/120 Safari/537.36' }), page = await ctx.newPage();
   try {
     page.setDefaultTimeout(15000);
     await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
     try { await page.getByRole('button', { name: /godkänn|acceptera|tillåt alla|ok/i }).first().click({ timeout: 3000 }); } catch (e) {}
-    const box = page.locator('input[type="search"], input[placeholder*="Sök"], input[name="q"]').first();
+    const SEL = 'input[type="search"], input[placeholder*="Sök" i], input[name="q"], input[name="search"], input[aria-label*="Sök" i]';
+    if (!(await page.locator(SEL).first().isVisible().catch(() => false))) { try { await page.locator('button[aria-label*="Sök" i], [data-testid*="search" i]').first().click({ timeout: 3000 }); } catch (e) {} }
+    const box = page.locator(SEL).first();
     await box.fill(q); await box.press('Enter');
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
     if (!/-p\d{5,}/.test(page.url())) {
@@ -41,17 +44,21 @@ async function hamta(q) {
     const name = (await page.locator('h1').first().innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
     const txt = await page.evaluate(() => document.body.innerText);
     const m = txt.match(PRICE);
-    return m ? [{ name, price: toNum(m[1]), unit: unitOf(m[2]), url: page.url() }] : [];
+    if (!m) return [];
+    let price = toNum(m[1]), unit = unitOf(m[2]);
+    if (unit !== 'm') { const L = lenOf(name); if (L && (unit === 'st' || !unit)) { price = Math.round(price / L * 100) / 100; unit = 'm'; } }
+    return [{ name, price, unit, url: page.url() }];
   } finally { await ctx.close(); }
 }
 
-async function pris(q) {
-  const hit = CACHE.get(q);
+async function pris(q, butik) {
+  butik = STORE_URL[butik] ? butik : 'Byggmax';
+  const ck = butik + '|' + q, hit = CACHE.get(ck);
   if (hit && Date.now() - hit.t < TTL) return { ...hit.d, cached: true };
-  const job = QUEUE.then(() => hamta(q));          // en sökning i taget
+  const job = QUEUE.then(() => hamta(q, STORE_URL[butik]));          // en sökning i taget
   QUEUE = job.catch(() => {});
-  const d = { q, hamtad: new Date().toISOString(), produkter: await job };
-  if (d.produkter.length) CACHE.set(q, { t: Date.now(), d });
+  const d = { q, butik, hamtad: new Date().toISOString(), produkter: await job };
+  if (d.produkter.length) CACHE.set(ck, { t: Date.now(), d });
   return d;
 }
 
@@ -211,7 +218,7 @@ const srv = http.createServer(async (req, res) => {
     const q = (u.searchParams.get('q') || '').trim().slice(0, 100);
     res.setHeader('content-type', 'application/json; charset=utf-8');
     if (!q) { res.statusCode = 400; return res.end('{"fel":"saknar q"}'); }
-    try { res.end(JSON.stringify(await pris(q))); }
+    try { res.end(JSON.stringify(await pris(q, u.searchParams.get('butik') || 'Byggmax'))); }
     catch (e) { res.statusCode = 502; res.end(JSON.stringify({ fel: String(e.message || e) })); }
     return;
   }

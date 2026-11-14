@@ -1,5 +1,6 @@
 /* ---------- Alternativ, inköp per butik och offert ---------- */
 let ALTS=[],SHOP={},OFFER={};
+const CMP={html:'',apply:false,best:{}},CSTORES=['Byggmax','Bauhaus','Beijer','Hornbach'];
 const STORES=['Byggmax','Bauhaus','Beijer','Optimera','Hornbach','Annan'];
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -50,8 +51,10 @@ function renderShop(){
     });
     h+='</div>';
   });
+  h+='<div class="tools" style="margin:10px 0"><button type="button" id="cmpBtn">Jämför priser mellan butiker</button><span id="cmpMsg" class="note"></span></div><div id="cmpOut">'+(CMP.html||'')+'</div>';
   h+='<p class="note">Kryssa av medan du handlar. Avprickningen och butiksvalen sparas med ritningen när du trycker Spara.</p>';
   box.innerHTML=h;
+  $('cmpBtn').onclick=cmpRun;if(CMP.apply)$('cmpApply').onclick=cmpApply;
   $('shopDef').onchange=e=>{SHOP._def=e.target.value;renderShop();};
   box.querySelectorAll('.shopC').forEach(c=>c.onchange=()=>{(SHOP[c.dataset.k]=SHOP[c.dataset.k]||{}).c=c.checked;renderShop();});
   box.querySelectorAll('.shopS').forEach(c=>c.onchange=()=>{(SHOP[c.dataset.k]=SHOP[c.dataset.k]||{}).s=c.value;renderShop();});
@@ -133,3 +136,41 @@ async function offerPdf(){
   anchor.after(s);anchor.after(a);   // ordning: kategori, alternativ, butik, offert
   offerUi();renderAlts();renderShop();
 })();
+
+/* ===== Jämför priser mellan butiker (virke och limträ, kr/m) ===== */
+async function cmpRun(){
+  const rows=ROWS.filter(r=>(r.mode==='lm'||r.mode==='m')&&/\d+x\d+/.test(r.name));
+  const qs=[...new Set(rows.map(r=>bmQ(r.name)))],tot=qs.length*CSTORES.length;let n=0;
+  const out={};$('cmpBtn').disabled=true;
+  try{
+    for(const q of qs)for(const st of CSTORES){
+      $('cmpMsg').textContent=' Hämtar '+(++n)+' av '+tot+' … (kan ta flera minuter)';
+      try{const r=await fetch('/api/pris?q='+encodeURIComponent(q)+'&butik='+st),j=await r.json();
+        if(!r.ok)throw new Error(j.fel||'fel');(out[q]=out[q]||{})[st]=j.produkter||[];}
+      catch(e){if(/Inte inloggad|Playwright/.test(e.message)){throw e;}(out[q]=out[q]||{})[st]=[];}
+    }
+  }catch(e){$('cmpMsg').textContent=' '+e.message+(/ping|fetch/i.test(e.message)?' Servern behövs för jämförelsen.':'');$('cmpBtn').disabled=false;return;}
+  const best={};let h='<div class="scroll"><table><thead><tr><th>Material</th>'+CSTORES.map(s=>'<th style="text-align:right">'+s+'</th>').join('')+'</tr></thead><tbody>';
+  const sum={},seen=new Set();CSTORES.forEach(s=>sum[s]=0);let cheap=0,covered=0;
+  rows.forEach(r=>{
+    const dim=r.name.match(/\d+x\d+/)[0],[a,b]=dim.split('x'),re=new RegExp('(^|\\D)('+a+'\\s*[x×]\\s*'+b+'|'+b+'\\s*[x×]\\s*'+a+')(\\D|$)','i'),q=bmQ(r.name);
+    const pr={};CSTORES.forEach(s=>{const p=((out[q]||{})[s]||[]).find(p=>p.unit==='m'&&re.test(p.name));if(p)pr[s]=p.price;});
+    const vals=Object.entries(pr);if(!vals.length)return;
+    const mn=vals.reduce((x,y)=>y[1]<x[1]?y:x),cost=f=>f*(r.q*((r.mode==='lm')?r.len:1));
+    best[r.key]={s:mn[0],p:mn[1]};
+    h+='<tr><td>'+esc(r.name)+'</td>'+CSTORES.map(s=>'<td class="n"'+(s===mn[0]?' style="font-weight:700;color:#1b7a3a"':'')+'>'+(pr[s]!=null?nf(pr[s],2):'–')+'</td>').join('')+'</tr>';
+    covered++;cheap+=cost(mn[1]);CSTORES.forEach(s=>{sum[s]+=cost(pr[s]!=null?pr[s]:r.p);});
+  });
+  if(!covered){CMP.html='<p class="note">Hittade inga jämförbara priser. Kontrollera att servern är igång och försök igen.</p>';CMP.apply=false;}
+  else{
+    h+='<tr class="sec"><td>Materialkostnad om allt köps hos</td>'+CSTORES.map(s=>'<td class="n">'+nf(sum[s])+'</td>').join('')+'</tr></tbody></table></div>';
+    const base=Math.max(...Object.values(sum));
+    h+='<p class="note">Kr/m. Grönt är billigast. Rader som en butik saknar räknas med riktpris i raden "köps hos". Köper du varje rad där den är billigast kostar dessa '+covered+' rader <b>'+nf(cheap)+' kr</b>.</p><div class="tools"><button type="button" class="primary" id="cmpApply">Välj billigaste butik och pris per rad</button></div>';
+    CMP.html=h;CMP.apply=true;CMP.best=best;
+  }
+  renderShop();
+}
+function cmpApply(){
+  Object.entries(CMP.best).forEach(([k,v])=>{(SHOP[k]=SHOP[k]||{}).s=v.s;PRICE_OV[k]=v.p;});
+  calc();pMsg('Valde billigaste butik och pris för '+Object.keys(CMP.best).length+' rader.');
+}
