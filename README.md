@@ -114,3 +114,17 @@ Gör en gång:
 3. Första gången du kör `start-fast.bat` visar Tailscale en länk som slår på **Funnel** för datorn. Öppna länken och godkänn.
 
 Därefter räcker det att dubbelklicka på `start-fast.bat` (Mac/Linux: `./start-fast.sh`). Adressen skrivs ut i fönstret. Inställningarna för publikt läge (inloggning krävs för priser, stängd registrering efter första kontot) är samma som i `start-publik.bat`. Stäng av delningen med `tailscale funnel reset`.
+
+## Egen domän (till exempel stomkalkyl.se)
+
+Ger en riktig adress som `https://stomkalkyl.se`. Datorn måste vara på medan appen används.
+
+Gör en gång:
+1. **Köp domänen** hos en registrar, till exempel Loopia, Namecheap eller Porkbun (cirka 100–150 kr/år för .se). Kolla att namnet är ledigt på internetstiftelsen.se.
+2. **Lägg domänen hos Cloudflare (gratis):** skapa konto på cloudflare.com, välj *Add a domain* och skriv in domänen. Cloudflare visar två namnservrar. Skriv in dem hos registraren där domänen är köpt (ställ in "namnservrar"). Det kan ta några timmar innan det slår igenom.
+3. Installera tunneln: `winget install Cloudflare.cloudflared`.
+4. Kör `setup-doman.bat` och skriv in adressen. Logga in hos Cloudflare när sidan öppnas.
+
+Därefter startar du appen med `start-doman.bat` (Mac/Linux: `./start-doman.sh`). Samma skydd som i publikt läge gäller.
+
+Obs: `stomkal.kyl.se` skulle kräva att du äger domänen `kyl.se`. Det gör du troligen inte, så välj en egen, till exempel `stomkalkyl.se`.
