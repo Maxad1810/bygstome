@@ -7,8 +7,8 @@ const PUBLIC = process.env.PUBLIC === '1';   // true när appen nås utifrån vi
 const PORT = +process.env.PORT || 8080, HOST = process.env.HOST || '127.0.0.1', TTL = 60 * 60 * 1000;
 const ROOT = __dirname, CACHE = new Map();
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.md': 'text/plain; charset=utf-8', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
-const STORE_URL = Object.assign({ Byggmax: process.env.BYGGMAX_URL || 'https://www.byggmax.se', Bauhaus: 'https://www.bauhaus.se', Beijer: 'https://www.beijerbygg.se', Hornbach: 'https://www.hornbach.se' }, JSON.parse(process.env.STORE_URLS || '{}'));
-const lenOf = n => { let m = n.match(/(\d{3,5})\s*mm/i); if (m && +m[1] >= 1000) return +m[1] / 1000; m = n.match(/(\d+(?:[.,]\d+)?)\s*m\b/i); if (m && +m[1] >= 1 && +m[1] <= 8) return parseFloat(m[1].replace(',', '.')); return 0; };
+const STORE_URL = Object.assign({ Byggmax: process.env.BYGGMAX_URL || 'https://www.byggmax.se', Beijer: 'https://www.beijerbygg.se/privat', 'XL-BYGG Kiruna': 'https://www.xlbyggstenvalls.se/kiruna' }, JSON.parse(process.env.STORE_URLS || '{}'));
+const lenOf = n => { let m = n.match(/(\d{3,5})\s*mm/i); if (m && +m[1] >= 1000) return +m[1] / 1000; m = n.match(/(\d+(?:[.,]\d+)?)\s*m\b/i); if (m) { const v = parseFloat(m[1].replace(',', '.')); if (v >= 1 && v <= 8) return v; } return 0; };
 
 /* Osynlig webbläsare (Playwright): Byggmax laddar priserna med JavaScript, så sidan måste "köras". */
 let BR = null, QUEUE = Promise.resolve();
@@ -51,11 +51,60 @@ async function hamta(q, BASE) {
   } finally { await ctx.close(); }
 }
 
+/* XL-BYGG Kiruna: priserna står i sidans text på kategorisidorna, så vi läser dem därifrån. */
+const XL_CATS = ['/sortiment/tra/plank-reglar', '/sortiment/tra/virke-ovrigt'];
+const XLP = /(\d[\d\s ]*(?:[.,]\d+)?)\s*:-\s*\/\s*([a-zA-ZåäöÅÄÖ²0-9]+)/;
+async function xlKategori(page, url) {
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  try { await page.getByRole('button', { name: /godkänn|acceptera|tillåt alla|ok/i }).first().click({ timeout: 2500 }); } catch (e) {}
+  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+  for (let i = 0; i < 12; i++) {                          // "visa fler" / ladda fler
+    const b = page.getByRole('button', { name: /visa fler|ladda fler|visa mer/i }).first();
+    if (!(await b.isVisible().catch(() => false))) break;
+    await b.click().catch(() => {}); await page.waitForTimeout(1200);
+  }
+  const items = await page.evaluate(() => {
+    const out = [];
+    document.querySelectorAll('a[href*="/sortiment/"]').forEach(a => { const t = (a.innerText || '').replace(/\s+/g, ' ').trim(); if (t) out.push({ href: a.href, text: t }); });
+    return { items: out, body: document.body.innerText };
+  });
+  const res = [];
+  const unit = u => { u = (u || '').toLowerCase(); return u === 'm2' ? 'm²' : u === 'lpm' || u === 'lm' ? 'm' : u; };
+  for (const it of items.items) {
+    const m = it.text.match(XLP); if (!m) continue;
+    const name = it.text.slice(0, m.index).replace(/\s+/g, ' ').trim(); if (name.length < 3) continue;
+    res.push({ name, price: toNum(m[1]), unit: unit(m[2]), url: it.href });
+  }
+  if (!res.length) {                                      // reserv: radbaserad läsning av sidtexten
+    const L = items.body.split('\n').map(x => x.trim()).filter(Boolean); let last = '';
+    for (const l of L) { const m = l.match(XLP); if (m) { const nm = (l.slice(0, m.index).trim() || last); if (nm.length > 2) res.push({ name: nm, price: toNum(m[1]), unit: unit(m[2]), url: url }); } else if (/[a-zåäö]{3}/i.test(l)) last = l; }
+  }
+  return res;
+}
+const XLC = {};
+async function hamtaXL(q, BASE) {
+  const b = await browser(), ctx = await b.newContext({ locale: 'sv-SE' }), page = await ctx.newPage();
+  try {
+    page.setDefaultTimeout(15000);
+    let all;
+    if (XLC.d && XLC.b === BASE && Date.now() - XLC.t < TTL) all = XLC.d;       // alla kategorier hämtas en gång per timme
+    else { all = []; for (const c of XL_CATS) { try { all = all.concat(await xlKategori(page, BASE + c)); } catch (e) {} } if (all.length) Object.assign(XLC, { d: all, t: Date.now(), b: BASE }); }
+    const dim = (q.match(/(\d+)\s*x\s*(\d+)/) || []);
+    if (!dim.length) return [];
+    const re = new RegExp('(^|\\D)(' + dim[1] + '\\s*[x×]\\s*' + dim[2] + '|' + dim[2] + '\\s*[x×]\\s*' + dim[1] + ')(\\D|$)', 'i');
+    return all.filter(p => re.test(p.name)).map(p => {
+      let { price, unit } = p;
+      if (unit !== 'm') { const L = lenOf(p.name); if (L && (unit === 'st' || unit === 'styck')) { price = Math.round(price / L * 100) / 100; unit = 'm'; } }
+      return { name: p.name, price, unit, url: p.url };
+    });
+  } finally { await ctx.close(); }
+}
+
 async function pris(q, butik) {
   butik = STORE_URL[butik] ? butik : 'Byggmax';
   const ck = butik + '|' + q, hit = CACHE.get(ck);
   if (hit && Date.now() - hit.t < TTL) return { ...hit.d, cached: true };
-  const job = QUEUE.then(() => hamta(q, STORE_URL[butik]));          // en sökning i taget
+  const job = QUEUE.then(() => (butik === 'XL-BYGG Kiruna' ? hamtaXL : hamta)(q, STORE_URL[butik]));          // en sökning i taget
   QUEUE = job.catch(() => {});
   const d = { q, butik, hamtad: new Date().toISOString(), produkter: await job };
   if (d.produkter.length) CACHE.set(ck, { t: Date.now(), d });

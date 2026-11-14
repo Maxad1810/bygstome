@@ -1,7 +1,7 @@
 /* ---------- Alternativ, inköp per butik och offert ---------- */
 let ALTS=[],SHOP={},OFFER={};
-const CMP={html:'',apply:false,best:{}},CSTORES=['Byggmax','Bauhaus','Beijer','Hornbach'];
-const STORES=['Byggmax','Bauhaus','Beijer','Optimera','Hornbach','Annan'];
+const CMP={html:'',apply:false,best:{}},CSTORES=['Byggmax','Beijer','XL-BYGG Kiruna'];
+const STORES=['Byggmax','Beijer','XL-BYGG Kiruna','Bauhaus','Optimera','Hornbach','Annan'];
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* spara alternativ, butiker och offertuppgifter tillsammans med ritningen */
