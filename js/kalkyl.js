@@ -5,19 +5,37 @@ const STD=[2.4,2.7,3.0,3.3,3.6,4.2,4.8,5.4];
 let lastText='';
 function drawOps(){
   $('ops').innerHTML=ops.map((o,i)=>`<div class="op">
-  <label>Typ<select data-i="${i}" data-k="t"><option value="f"${o.t==='f'?' selected':''}>Fönster</option><option value="d"${o.t==='d'?' selected':''}>Dörr</option></select></label>
+  <label>Typ<select data-i="${i}" data-k="t"><option value="f"${o.t==='f'?' selected':''}>Fönster</option><option value="d"${o.t==='d'?' selected':''}>Dörr</option><option value="p"${o.t==='p'?' selected':''}>Garageport</option></select></label>
   <label>Bredd m<input type="number" step="0.1" min="0.3" value="${o.w}" data-i="${i}" data-k="w"></label>
   <label>Höjd m<input type="number" step="0.1" min="0.3" value="${o.h}" data-i="${i}" data-k="h"></label>
   <label>Antal<input type="number" step="1" min="1" value="${o.n}" data-i="${i}" data-k="n"></label>
   <label>Våning<select data-i="${i}" data-k="v">${['Alla',1,2,3].map((n,j)=>`<option value="${j}"${(o.v||0)===j?' selected':''}>${n}</option>`).join('')}</select></label>
   <button class="x" type="button" data-del="${i}" aria-label="Ta bort öppning">✕</button></div>`).join('');
 }
-$('ops').addEventListener('input',e=>{const t=e.target,i=t.dataset.i;if(i==null)return;ops[i][t.dataset.k]=t.dataset.k==='t'?t.value:(parseFloat(t.value)||0);calc();});
+$('ops').addEventListener('input',e=>{const t=e.target,i=t.dataset.i;if(i==null)return;ops[i][t.dataset.k]=t.dataset.k==='t'?t.value:(parseFloat(t.value)||0);if(t.dataset.k==='t'){const d0={f:[1.2,1.2],d:[.9,2.1],p:[2.5,2.2]}[t.value];if(d0){ops[i].w=d0[0];ops[i].h=d0[1];}drawOps();}calc();});
 $('ops').addEventListener('click',e=>{const d=e.target.closest('[data-del]');if(d){ops.splice(+d.dataset.del,1);drawOps();calc();}});
 $('add').onclick=()=>{ops.push({t:'f',w:1,h:1.2,n:1});drawOps();calc();};
 function stdLen(m){for(const s of STD)if(m<=s+1e-9)return s;return Math.ceil(m*10)/10;}
 const g=id=>parseFloat($(id).value)||0;const g0=g;
+function syncBuild(){
+  const hus=$('bHus').checked,ga=$('gaOn').checked;
+  if(!hus&&$('dk').checked)$('dk').checked=false;
+  if(!hus&&$('bk').checked)$('bk').checked=false;
+  $('dk').disabled=!hus;$('bk').disabled=!hus;
+  if(hus&&$('bk').checked){
+    const kv=Math.max(1,Math.min(parseInt($('bkV').value)||2,mcount()));
+    let bd=ops.find(o=>o.bd);
+    if(!bd){bd={t:'d',w:.9,h:2.1,n:1,v:kv,bd:true,id:++uid};ops.push(bd);drawOps();}
+    bd.v=kv;
+  }else if(ops.some(o=>o.bd)){ops=ops.filter(o=>!o.bd);drawOps();}
+  document.querySelectorAll('fieldset[data-need]').forEach(f=>{
+    const n=f.dataset.need;
+    const show=n==='hus'?hus:(n==='any'?(hus||ga):(n==='dk'?(hus&&$('dk').checked):(n==='bk'?(hus&&$('bk').checked):(n==='ga'?ga:true))));
+    f.style.display=show?'':'none';
+  });
+}
 function sync(){
+  syncBuild();
   const rt=$('rt'),rd=$('rd');
   if(rd.dataset.t!==rt.value){
     const gl=rt.value==='g',o=gl?['90x225','90x315','115x315','115x405']:['45x95','45x120','45x145','45x195'],def=gl?'90x315':'45x145';
@@ -60,9 +78,146 @@ function wingPlan(L0,B,list){
   list.forEach(w=>{if(w.s==='f')cut(0,w.x0,w.x0+B);else cut(2,L0-w.x0-B,L0-w.x0);});
   return plan;
 }
+let GOPS_OLD=[];
+let GROWS=[{id:1,t:'p',w:2.5,h:2.2,n:1},{id:2,t:'d',w:.9,h:2.1,n:1},{id:3,t:'f',w:1,h:1,n:1}],GUID=3,GOPS=[];
+function garageOps(L,B){
+  GROWS.forEach(r=>{if(!r.id)r.id=++GUID;});
+  GOPS=GOPS.filter(o=>GROWS.some(r=>r.id===o.gid));
+  GROWS.forEach(r=>{
+    const n=Math.min(8,Math.max(0,Math.round(r.n||0))),mine=GOPS.filter(o=>o.gid===r.id);
+    mine.slice(n).forEach(o=>GOPS.splice(GOPS.indexOf(o),1));
+    for(let i=mine.length;i<n;i++){
+      const wall=r.t==='p'?1:(r.t==='d'?0:2),len=wall%2?B:L;
+      GOPS.push({gid:r.id,wall,c:len*(i+1)/(n+1)});
+    }
+  });
+  GOPS.forEach(o=>{
+    const r=GROWS.find(x=>x.id===o.gid),len=o.wall%2?B:L;
+    o.t=r.t;o.w=Math.max(.4,Math.min(r.w||1,len-.4));o.h=Math.max(.4,r.h||1);o.garage=true;
+  });
+  GOPS.sort((a,b)=>({p:0,d:1,f:2}[a.t]-{p:0,d:1,f:2}[b.t])||(a.gid-b.gid));
+  return GOPS;
+}
+function garageInfo(){
+  if(!$('gaOn')||!$('gaOn').checked)return null;
+  const L=Math.max(3,g0('gaL')),B=Math.max(2.5,g0('gaB'));
+  const th=Math.PI/2+g0('gaR')*Math.PI/180;
+  const rot=(x,z)=>[x*Math.cos(th)+z*Math.sin(th),-x*Math.sin(th)+z*Math.cos(th)];
+  const cs=[[0,0],[L,0],[L,B],[0,B]].map(p=>rot(p[0],p[1]));
+  const minx=Math.min(...cs.map(c=>c[0])),minz=Math.min(...cs.map(c=>c[1]));
+  const bw=Math.max(...cs.map(c=>c[0]))-minx,bh=Math.max(...cs.map(c=>c[1]))-minz;
+  const ox=g0('gaX')-minx,oz=g0('gaZ')-minz,gops=garageOps(L,B);
+  const tf=(x,z)=>{const r=rot(x,z);return [ox+r[0],oz+r[1]];};
+  const type=($('gaT')&&$('gaT').value)||'g';
+  return {L,B,H:g0('gaH'),th,ox,oz,bw,bh,gops:type==='c'?[]:gops,tf,ins:$('gaI').checked,type};
+}
+function carportRows(gi){
+  const L=gi.L,B=gi.B,H=gi.H,A=L*B,sp=1+g0('S')/100,pc=Math.ceil,tn=Math.tan(Math.min(g0('P'),15)*Math.PI/180),rise=tn*B;
+  const nP=2*(pc(L/3)+1),slope=Math.hypot(B+.6,rise),roofA=(L+.6)*slope,rafN=pc(L/.9)+1;
+  return [[GN()+' \u2013 Carport',[
+    ['Stolpar 95x95 (carport)',nf(nP)+' st','l\u00e4ngd '+nf(H+rise+.3,1)+' m'],
+    ['Plintar (carport)',nf(nP)+' st','under varje stolpe'],
+    ['B\u00e4rbalk 2\u00d745x195 (carport)',nf(pc(2*L*sp/4.8)*2)+' st','\u00e0 4,8 m \u00b7 '+nf(2*L,1)+' m, dubbla'],
+    ['Takbj\u00e4lkar 45x145 (carport)',nf(pc(rafN*sp))+' st','l\u00e4ngd '+nf(B+.6,1)+' m \u00b7 c/c 900 mm'],
+    ['Takstolsbeslag (carport)',nf(rafN*2)+' st','2 per bj\u00e4lke'],
+    ['Underlagstak/r\u00e5spont (carport)',nf(roofA*sp,1)+' m\u00b2','med spill'],
+    ['Underlagspapp (carport)',nf(pc(roofA*1.1*sp/15))+' rullar','\u00e0 15 m\u00b2'],
+    ['Takpl\u00e5t (carport)',nf(roofA*1.05,1)+' m\u00b2','t\u00e4ckt yta + 5 %'],
+    ['Takfotspl\u00e5t (carport)',nf(pc(L*sp/2))+' st','\u00e0 2 m'],
+    ['Vindskivepl\u00e5t (carport)',nf(pc(2*slope*sp/2))+' st','\u00e0 2 m'],
+    ['H\u00e4ngr\u00e4nnor (carport)',nf(pc(L*sp/3))+' st','\u00e0 3 m'],
+    ['Stupr\u00f6r (carport)','2 st','\u00e0 3 m'],
+    ['Dr\u00e4nerande makadam 0-32 mm (carport)',nf(A*.15*1.15,1)+' m\u00b3','150 mm under taket']
+  ]]];
+}
+function garageRows(){
+  const gi=garageInfo();if(!gi)return [];
+  if(gi.type==='c')return carportRows(gi);
+  const so=ops;ops=gi.gops.map((x,i)=>({t:x.t,w:x.w,h:x.h,n:1,id:'g'+i}));
+  let s;
+  try{s=calcCore({wing:true,gar:true,FL:gi.L,FW:gi.B,W1:gi.L,W2:gi.B,W3:gi.L,W4:gi.B,RL:gi.L,RW:gi.B,H2:gi.H,I:0,noGrund:true,N:1});}
+  finally{ops=so;}
+  s=s.filter(x=>x[0]!=='Golv');
+  const A=gi.L*gi.B,KILL=gi.ins?[]:['Isolering','Ångspärr','Installationsläkt','Gipsskiva'];
+  s.forEach(x=>{if(x[0]==='Skivor och isolering')x[1]=x[1].filter(r=>!KILL.some(k=>r[0].startsWith(k)));});
+  s=s.filter(x=>x[1].length>0);
+  const slab=['Platta på mark',[
+    ['Dränerande makadam 0-32 mm',nf(A*.2*1.15,1)+' m³','200 mm, 15 % packning'],
+    ['Cellplast EPS 100 mm under platta',nf(A*1.05,1)+' m²',''],
+    ['Armeringsnät K189 (platta)',nf(A*1.15,1)+' m²',''],
+    ['Betong C25/30 (platta 120 mm)',nf(A*.12*1.08,1)+' m³','+ 8 % för kantförstärkning'],
+    ['Kantelement/formvirke (platta)',nf(2*(gi.L+gi.B),1)+' m','runt plattan']
+  ]];
+  s.unshift(slab);
+  s.forEach(x=>{x[0]=GN()+' – '+x[0];});
+  return s;
+}
+function wingCuts(w,k){
+  const out=[];
+  if(!$('hs')||$('hs').value==='r'||!WINGS.length)return out;
+  const B=g0('GB'),L0=g0('W1');
+  WINGS.forEach((wg,i)=>{
+    if(wcount(i)<=k)return;
+    if(w===0&&wg.s==='f')out.push([wg.x0,wg.x0+B]);
+    if(w===2&&wg.s==='b')out.push([L0-wg.x0-B,L0-wg.x0]);
+  });
+  return out;
+}
+function cutPieces(w,a,b,k){
+  let cur=[{a,b}];
+  wingCuts(w,k).forEach(([ia,ib])=>{
+    cur=cur.flatMap(p=>{if(ib<=p.a||ia>=p.b)return [p];const r=[];if(ia>p.a)r.push({a:p.a,b:ia});if(ib<p.b)r.push({a:ib,b:p.b});return r;});
+  });
+  return cur.filter(p=>p.b-p.a>.15).map(p=>({a:p.a,b:p.b,startCut:Math.abs(p.a-a)>1e-6,endCut:Math.abs(p.b-b)>1e-6}));
+}
+function balcInfo(){
+  if(!$('bk')||!$('bk').checked||!$('bHus').checked)return null;
+  const wl=[g0('W1'),g0('W2'),g0('W3'),g0('W4')],w=Math.min(3,Math.max(0,parseInt($('bkS').value)||0));
+  const dl=Math.max(.8,Math.min(g0('bkL'),wl[w])),dp=Math.max(.6,g0('bkD')),x0=Math.min(Math.max(g0('bkX'),0),Math.max(0,wl[w]-dl));
+  const k=Math.max(1,Math.min(parseInt($('bkV').value)||2,mcount()))-1;
+  const segs=cutPieces(w,x0,x0+dl,k).map(p=>({a:p.a,b:p.b,startRail:!p.startCut,endRail:!p.endCut}));
+  if(!segs.length)return null;
+  const dlT=segs.reduce((a2,p)=>a2+(p.b-p.a),0);
+  return {w,dl:dlT,dlReq:dl,dp,x0,k,wl,segs,rack:$('bkR').checked,posts:$('bkP').checked};
+}
+function balcRows(){
+  const b=balcInfo();if(!b)return null;
+  const sp=1+g0('S')/100,pc=Math.ceil,dl=b.dl,dp=b.dp,area=dl*dp,H=g0('H2');
+  const jh=(parseInt($('jd').value.split('x')[1])||195)/1000,fo=($('gr').value==='p'?(g0('ph')||.4)+jh:0),y00=fo+jh+.022;
+  const top=y00+b.k*(H+jh+.022)-.03,nj=pc(dl/.6)+1;
+  const rows=[
+    ['Balkongbjälkar 45x195 (balkong)',nf(pc(nj*sp))+' st','längd '+nf(dp+.4,1)+' m · c/c 600 mm, inspända i våningsbjälklaget'],
+    ['Randbjälke 45x195 (balkong)',nf(pc(dl*sp/4.8))+' st','à 4,8 m · '+nf(dl,1)+' m'],
+    ['Bjälkskor (balkong)',nf(nj*2)+' st','2 per bjälke'],
+    ['Däcksplank 28x120 (balkong)',nf(area/.125*1.1,0)+' m',nf(area,1)+' m² · c/c 125 mm, 10 % spill'],
+    ['Däckskruv 4,5x60 (balkong)',nf(pc(area*40*sp))+' st','ca 40 st/m²']
+  ];
+  if(b.rack){const Lr=dl+2*dp;rows.push(['Räckesstolpar 95x95 (balkong)',nf(pc(Lr/1.2)+2)+' st','längd 1,0 m · c/c max 1,2 m']);rows.push(['Handledare och ribbor 45x95 (balkong)',nf(pc(Lr*3*sp/4.8))+' st','à 4,8 m · '+nf(Lr*3,1)+' m (3 rader)']);}
+  if(b.posts){const h=Math.max(.5,top-.223);rows.push(['Stödstolpar 95x95 (balkong)','2 st','längd '+nf(h,1)+' m, till marken']);rows.push(['Plintar (balkong)','2 st','under stödstolparna']);}
+  return rows;
+}
+function deckSegs(){
+  const wl=[g0('W1'),g0('W2'),g0('W3'),g0('W4')],dp=g0('dkD'),per=wl.reduce((a,b)=>a+b,0);
+  const dl=Math.max(.5,Math.min(g0('dkL'),per-.1));
+  let w=Math.min(3,Math.max(0,parseInt($('dkS').value)||0)),x=Math.min(Math.max(g0('dkX'),0),Math.max(0,wl[w]-.05));
+  const segs=[];let rem=dl,guard=0;
+  while(rem>.01&&guard++<8){
+    const avail=wl[w]-x;
+    if(rem>avail+.001){segs.push({w,a:x,b:wl[w]+dp,first:segs.length===0,last:false,ext:true});rem-=avail;w=(w+1)%4;x=0;}
+    else{segs.push({w,a:x,b:x+rem,first:segs.length===0,last:true,ext:false});rem=0;}
+  }
+  const pieces=[];
+  segs.forEach(sg=>{
+    cutPieces(sg.w,sg.a,sg.b,0).forEach(p=>{
+      pieces.push({w:sg.w,a:p.a,b:p.b,ext:sg.ext&&!p.endCut,first:sg.first&&!p.startCut,last:sg.last&&!p.endCut,startRail:!p.startCut,endRail:!p.endCut});
+    });
+  });
+  const corners=pieces.filter(s=>s.ext).length,leff=pieces.reduce((a2,p)=>a2+(p.b-p.a),0);
+  return {segs:pieces,dp,dl:Math.max(0,leff-corners*dp),corners,leff,cutByWing:pieces.length!==segs.length||segs.some((sg,i)=>!pieces[i]||Math.abs(pieces[i].b-sg.b)>1e-6||Math.abs(pieces[i].a-sg.a)>1e-6)};
+}
 function deckRows(){
   if(!$('dk').checked)return null;
-  const dl=g0('dkL'),dp=g0('dkD'),hd=g0('dkH'),sp=1+g0('S')/100,pc=Math.ceil;
+  const D=deckSegs(),dl=D.leff,dp=D.dp,hd=g0('dkH'),sp=1+g0('S')/100,pc=Math.ceil;
   const pl=Math.max(.15,hd-.318),top=pl+.318,lines=pc(dp/1.6)+1,perL=pc(dl/1.8)+1,np=lines*perL,area=dl*dp;
   const rows=[
     ['Plintar (altan)',nf(np)+' st','höjd '+nf(pl,2)+' m · '+nf(lines)+' rader × '+nf(perL)+' st'],
@@ -76,7 +231,7 @@ function deckRows(){
   ];
   const stairs=$('dkT').checked;
   if($('dkR').checked){
-    const Lr=dl+2*dp-(stairs?1:0),nposts=pc(Lr/1.2)+2;
+    const Lr=dl+2*dp+D.corners*dp-(stairs?1:0),nposts=pc(Lr/1.2)+2;
     rows.push(['Räckesstolpar 95x95 (altan)',nf(nposts)+' st','längd 1,0 m · c/c max 1,2 m']);
     rows.push(['Handledare och ribbor 45x95 (altan)',nf(pc(Lr*3*sp/4.8))+' st','à 4,8 m · '+nf(Lr*3,1)+' m (3 rader)']);
   }
@@ -86,6 +241,18 @@ function deckRows(){
     rows.push(['Trappsteg 28x120 (altan)',nf(n*2,0)+' m','2 plank per steg, bredd 1,0 m']);
     rows.push(['Plintar trappa (altan)','2 st','under trappvangarna']);
   }
+  const rt=$('dkRoof')?$('dkRoof').value:'n';
+  if(rt!=='n'){
+    const rh=g0('dkRH')||2.5,sl=Math.tan(8*Math.PI/180),rafL=Math.hypot(dp+.3,sl*(dp+.3));
+    const np=D.segs.reduce((a,sg)=>a+Math.max(2,pc((sg.b-sg.a)/2.8)+1),0),rafN=D.segs.reduce((a,sg)=>a+pc((sg.b-sg.a)/(rt==='f'?.6:.9))+1,0);
+    rows.push(['Stolpar 95x95 (altantak)',nf(np)+' st','l\u00e4ngd '+nf(rh,1)+' m']);
+    rows.push(['B\u00e4rbalk 2\u00d745x195 (altantak)',nf(pc(D.leff*2*sp/4.8)*2)+' st','\u00e0 4,8 m \u00b7 '+nf(D.leff*2,1)+' m, dubbla']);
+    rows.push(['Takbj\u00e4lkar 45x145 (altantak)',nf(pc(rafN*sp))+' st','l\u00e4ngd '+nf(rafL,1)+' m']);
+    rows.push(['Ledger 45x195 mot husv\u00e4gg (altantak)',nf(pc(D.leff*sp/4.8))+' st','\u00e0 4,8 m \u00b7 '+nf(D.leff,1)+' m']);
+    rows.push(['Takbalkskor och beslag (altantak)',nf(rafN*2)+' st','2 per bj\u00e4lke']);
+    if(rt==='p')rows.push(['Lameller 28x70 (altantak)',nf(D.leff*pc((dp+.3)/.3)*sp,0)+' m','c/c 300 mm']);
+    else{const roofA=D.leff*rafL;rows.push(['Underlagstak/r\u00e5spont (altantak)',nf(roofA*sp,1)+' m\u00b2','med spill']);rows.push(['Underlagspapp (altantak)',nf(pc(roofA*1.1*sp/15))+' rullar','\u00e0 15 m\u00b2']);rows.push(['Takpl\u00e5t (altantak)',nf(roofA*1.05,1)+' m\u00b2','t\u00e4ckt yta + 5 %']);rows.push(['Takfotspl\u00e5t (altantak)',nf(pc(D.leff*sp/2))+' st','\u00e0 2 m']);}
+  }
   return rows;
 }
 function wcount(i){return Math.max(1,parseInt($('vw'+(i+1)).value)||1);}
@@ -94,8 +261,9 @@ function calc(){
   sync();wingSetup();
   const Nm=mcount(),WL=g('GL'),WB=g('GB'),L0=g('W1');
   const ROOF=['Tak','Plåtdetaljer och vindskivor','Hängrännor och stuprör'];
-  const parts=[{nm:'Hus',N:Nm,main:true}];
-  WINGS.forEach((w,i)=>parts.push({nm:'Vinge '+(i+1),N:wcount(i)}));
+  const hus=$('bHus').checked;
+  const parts=hus?[{nm:'Hus',N:Nm,main:true}]:[];
+  if(hus)WINGS.forEach((w,i)=>parts.push({nm:'Vinge '+(i+1),N:wcount(i)}));
   let all=[];
   parts.forEach((pt,pi)=>{
     for(let k=0;k<pt.N;k++){
@@ -119,9 +287,14 @@ function calc(){
       all=all.concat(s);
     }
   });
-  const dr=deckRows();if(dr)all.push(['Altan',dr]);
+  const dr=hus?deckRows():null;if(dr)all.push(['Altan',dr]);
+  const brr=hus?balcRows():null;if(brr)all.push(['Balkong',brr]);
+  {const bs=parseInt($('hBS').value)||0;if(hus&&Nm>1&&bs>0)all.push(['Stöd under mellanbjälklag',[['Limträbalk 115x315 (bjälklagsstöd)',nf(bs*(Nm-1))+' st','längd '+nf(g('FL'),1)+' m · en per stödlinje och våning']]]);}
+  garageRows().forEach(x=>all.push(x));
   const shn={r:'',l:'L-form',t:'T-form',x:'X-form',u:'U-form'}[$('hs').value];
   TITLE='Stomkalkyl – hus '+nf(g('L'),1)+'×'+nf(g('W'),1)+' m'+(shn?' ('+shn+', vinge '+nf(WL,1)+'×'+nf(WB,1)+' m)':'')+(Nm>1?', '+Nm+' våningar (huvudhus)':'');
+  if(!hus)TITLE='Stomkalkyl – fristående garage';
+  try{renderWarn();}catch(e){console.error(e);}
   renderRes(all);
 }
 function calcPrev(){
@@ -191,7 +364,7 @@ function calcCore(o){
   const gips=Math.ceil(inA*sp/2.88);
   const ins=wallA*sp;
   // Tak
-  const rad=P*Math.PI/180,eaveL=L+2*O,slope=(W/2+O)/Math.cos(rad);
+  const rad=P*Math.PI/180,eaveL=L+((o&&o.wing&&!o.gar)?O:2*O),slope=(W/2+O)/Math.cos(rad);
   const roofA=2*eaveL*slope;
   const trusses=Math.ceil(L/ccT)+1;
   const lath=roofA/0.3*sp;
@@ -208,7 +381,7 @@ function calcCore(o){
       ['Plintar',nf(plinN)+' st','höjd '+nf(ph,2)+' m · '+nf(lines)+' rader × '+nf(perLine)+' st'],
       ['Bärlinor 2×'+jd,nf(bmN)+' st','à 4,8 m · '+nf(lines*FL,1)+' m, dubbla'],
       ['Plintpapp (kapillärbrytare)',nf(plinN)+' st','en under varje bärlina på plint']]:[]),
-    ['Bjälkar '+jd,nf(jTot)+' st','längd '+nf(jl,1)+' m · c/c '+nf(jc*1000)+' mm'],
+    ['Bjälkar '+jd,nf(jTot)+' st','längd '+nf(jl,1)+' m, exakt '+nf(FW,2)+' m · c/c '+nf(jc*1000)+' mm'],
     ['Randbjälkar '+jd,nf(rim)+' st','à 4,8 m · längs '+nf(2*FL,1)+' m'],
     ['Bjälkskor',nf(jTot*2)+' st','2 per bjälke'],
     ['Vindskydd under bjälklag (vindpapp/duk)',nf(floorA*1.1*sp,1)+' m²','med överlapp och spill'],
@@ -224,12 +397,13 @@ function calcCore(o){
   const braceM=ws.reduce((a,l)=>a+2*Math.hypot(Math.min(l,2.4),Math.max(H-.135,.5)),0)*sp;
   const rowsI=pc(H/.6)+1,instM=per*rowsI*sp,fasStr=(pc(per/.6)+1)*H*sp;
   const opPer=ops.reduce((a,o)=>a+2*(o.w+o.h)*(o.n||0),0)*1.1;
-  const opRows=ops.filter(o=>o.n>0).map(o=>[(o.t==='f'?'Fönster ':'Dörr ')+nf(o.w*1000)+'×'+nf(o.h*1000)+' mm',nf(o.n)+' st','']);
+  const opRows=ops.filter(o=>o.n>0).map(o=>[(o.t==='f'?'Fönster ':(o.t==='p'?'Garageport ':'Dörr '))+nf(o.w*1000)+'×'+nf(o.h*1000)+' mm',nf(o.n)+' st','']);
   const rdim=$('rd').value,glu=$('rt').value==='g',rafL=Math.ceil((slope+.05)*10)/10,rafN=trusses*2;
   const roofFrame=glu?[
     ['Limträsparrar '+rdim,nf(rafN)+' st','längd '+nf(rafL,1)+' m · c/c '+nf(ccT,1)+' m, ett par per läge'],
     ['Limträ nockbalk '+rdim,nf(pc(eaveL/12))+' st','totalt '+nf(eaveL,1)+' m, max 12 m per balk'],
-    ['Sparrbeslag/balkskor',nf(rafN*2)+' st','ett i vardera änden']
+    ['Sparrbeslag/balkskor',nf(rafN*2)+' st','ett i vardera änden'],
+    ...((parseInt($('hNS').value)||0)>0?(()=>{const nS=parseInt($('hNS').value)||0,hp=H+Math.tan(P*Math.PI/180)*W/2;return [['Stolpar 95x95 (nockstöd)',nf(nS)+' st','längd '+nf(hp,1)+' m'],['Plintar (nockstöd)',nf(nS)+' st','under varje stöd']];})():[])
   ]:[
     ['Takstolar '+rdim,nf(trusses)+' st','spännvidd '+nf(W,1)+' m · c/c '+nf(ccT,1)+' m'],
     ['Takstolsbeslag',nf(trusses*2)+' st','2 per takstol']
@@ -237,8 +411,8 @@ function calcCore(o){
   const sec=[
    ['Golv',floorRows],
    ['Väggstomme',[
-    ['Reglar ytterväggar '+dim,nf(pc(studs*sp))+' st','längd '+nf(sl,1)+' m ('+nf(studs)+' st + spill, inkl. hörn, öppningar och gavelspetsar)'],
-    ['Reglar innerväggar '+dim,nf(pc(inner*sp))+' st','längd '+nf(sl,1)+' m ('+nf(inner)+' st + spill)'],
+    ['Reglar ytterväggar '+dim,nf(pc(studs*sp))+' st','längd '+nf(sl,1)+' m, exakt '+nf(H-.135,2)+' m ('+nf(studs)+' st + spill, inkl. hörn, öppningar och gavelspetsar)'],
+    ['Reglar innerväggar '+dim,nf(pc(inner*sp))+' st','längd '+nf(sl,1)+' m, exakt '+nf(H-.135,2)+' m ('+nf(inner)+' st + spill)'],
     ['Syll och ovanregel '+dim,nf(plateP)+' st','à 4,8 m · '+nf(plateM,1)+' m, 1 syll + 2 ovanreglar'],
     ['Bärlinor över öppningar 2×'+dim,nf(hdrP)+' st','à 4,8 m · '+nf(hdrM,1)+' m'],
     ['Fönsterbröstregel '+dim,nf(sillP)+' st','à 4,8 m · '+nf(sillM,1)+' m'],
@@ -276,6 +450,7 @@ function calcCore(o){
     ['Vindskiveplåt',nf(vsP)+' st','à 2 m · '+nf(gabM,1)+' m'],
     ['Takfotsplåt (droppkant)',nf(fotP)+' st','à 2 m · '+nf(fotM,1)+' m'],
     ['Nockplåt',nf(nockP)+' st','à 2 m · '+nf(eaveL,1)+' m'],
+    ...((o&&o.wing&&!o.gar)?(()=>{const tv=Math.tan(rad),vl=(W/2)*Math.sqrt(2+tv*tv),vm=2*vl*1.1;return [['Ränndalsplåt (takanslutning)',nf(vm,1)+' m','2 ränndalar à '+nf(vl,1)+' m, 10 % spill'],['Ränndalsbräda 22x195',nf(vm,1)+' m','under plåten i ränndalen']];})():[]),
     ['Snörasskydd, rör Ø25 (2 rader)',nf(pc(4*(eaveL-.5)*sp/3))+' st','à 3 m · '+nf(4*(eaveL-.5),1)+' m, 0,6 m från takfot'],
     ['Snörasskyddskonsoler',nf(2*(pc((eaveL-.5)/.9)+1))+' st','c/c 900 mm · inkl. tätning och skruv'],
     ['Ändlock för rör',nf(8)+' st','2 per rör']]],
@@ -288,3 +463,29 @@ function calcCore(o){
   return sec;
   
 }
+
+/* ---------- Färger ---------- */
+const FC_PRESETS=[['Falu röd','#8a2f23'],['Vit','#f2f0ea'],['Ljusgrå','#b9bec0'],['Grafit','#3b4247'],['Gul','#d8b04a'],['Blå','#3e6a8a'],['Grön','#4f6b4c'],['Natur trä','#b0814f']];
+FC_PRESETS.forEach(([n,c])=>{
+  const b=document.createElement('button');b.type='button';b.title=n;b.setAttribute('aria-label','Fasadfärg '+n);
+  b.style.cssText='width:44px;min-height:44px;flex:0 0 44px;padding:0;border:2px solid var(--line);border-radius:50%;background:'+c;
+  b.onclick=()=>{const e=$('fc');e.value=c;e.dispatchEvent(new Event('input',{bubbles:true}));};
+  $('fcSw').appendChild(b);
+});
+function hexRgb(h){const m=/^#?([0-9a-f]{6})$/i.exec(h||'');const v=m?parseInt(m[1],16):0x8a2f23;return [(v>>16)&255,(v>>8)&255,v&255];}
+function hexShade(h,f){return hexRgb(h).map(v=>Math.max(0,Math.min(255,Math.round(v*f))));}
+
+/* ---------- Byggnadstyper (garage, förråd, gäststuga, carport) ---------- */
+function GN(){return {g:'Garage',f:'Förråd',s:'Gäststuga',c:'Carport'}[($('gaT')&&$('gaT').value)||'g']||'Garage';}
+const GPRE={
+  g:{L:6,B:4,H:2.5,ins:false,rows:[{t:'p',w:2.5,h:2.2,n:1},{t:'d',w:.9,h:2.1,n:1},{t:'f',w:1,h:1,n:1}]},
+  f:{L:4,B:3,H:2.3,ins:false,rows:[{t:'d',w:.9,h:2.0,n:1},{t:'f',w:.8,h:.8,n:1}]},
+  s:{L:6,B:5,H:2.5,ins:true,rows:[{t:'d',w:.9,h:2.1,n:1},{t:'f',w:1.2,h:1.2,n:3}]},
+  c:{L:6,B:3.5,H:2.4,ins:false,rows:[]}
+};
+$('gaT').addEventListener('input',()=>{
+  const p=GPRE[$('gaT').value];if(!p)return;
+  $('gaL').value=p.L;$('gaB').value=p.B;$('gaH').value=p.H;$('gaI').checked=p.ins;
+  GROWS=p.rows.map(r=>({...r,id:++GUID}));GOPS=[];
+  drawGOps();
+});

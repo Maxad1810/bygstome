@@ -3,14 +3,14 @@ let DEF=null,delArm=null;
 const PKEY='stomkalkyl-ritningar',pSel='.panel input[id]:not([id^=pj]),.panel select[id]:not([id^=pj])';
 function snap(){
   const f={};document.querySelectorAll(pSel).forEach(el=>{f[el.id]=el.type==='checkbox'?el.checked:el.value;});
-  return JSON.parse(JSON.stringify({f,ops,inst,uid,wings:WINGS,wsh:WSH,po:PRICE_OV,els:ELS}));
+  return JSON.parse(JSON.stringify({f,ops,inst,uid,wings:WINGS,wsh:WSH,po:PRICE_OV,els:ELS,gops:GOPS,grows:GROWS,guid:GUID}));
 }
 function restore(s0){
   const s=JSON.parse(JSON.stringify(s0));
   Object.entries(s.f||{}).forEach(([id,v])=>{const el=$(id);if(!el||id==='rd')return;if(el.type==='checkbox')el.checked=!!v;else el.value=v;});
-  ops=s.ops||[];ELS=s.els||[];inst=s.inst||[];uid=s.uid||0;WINGS=s.wings||[];WSH=s.wsh||$('hs').value;PRICE_OV=s.po||{};
+  ops=s.ops||[];ELS=s.els||[];GOPS=s.gops||[];GROWS=s.grows||[{id:1,t:'p',w:2.5,h:2.2,n:1},{id:2,t:'d',w:.9,h:2.1,n:1},{id:3,t:'f',w:1,h:1,n:1}];GUID=s.guid||Math.max(3,...GROWS.map(r=>r.id||0));drawGOps();inst=s.inst||[];uid=s.uid||0;WINGS=s.wings||[];WSH=s.wsh||$('hs').value;PRICE_OV=s.po||{};
   sync();if(s.f&&s.f.rd)$('rd').value=s.f.rd;
-  drawOps();drawEls();if(R3)R3.fresh=true;calc();peelUpdate();
+  drawOps();drawEls();if(R3&&!KEEPCAM)R3.fresh=true;calc();peelUpdate();
 }
 function pAll(){try{return JSON.parse(localStorage.getItem(PKEY)||'{}')||{};}catch(e){return {};}}
 function pPut(o){try{localStorage.setItem(PKEY,JSON.stringify(o));return true;}catch(e){return false;}}
@@ -64,3 +64,30 @@ $('pjFile').onchange=()=>{
   };
   r.readAsText(f);
 };
+
+/* ---------- Ångra / gör om ---------- */
+let HIST=[],HI=-1,HLOCK=false,HT=null,KEEPCAM=false;
+function histUi(){const u=$('undoB'),r=$('redoB');if(u)u.disabled=HI<=0;if(r)r.disabled=HI>=HIST.length-1;}
+function histPush(){
+  if(HLOCK)return;
+  const s=JSON.stringify(snap());
+  if(HIST[HI]===s)return;
+  HIST=HIST.slice(0,HI+1);HIST.push(s);if(HIST.length>60)HIST.shift();
+  HI=HIST.length-1;histUi();
+}
+function histSchedule(){clearTimeout(HT);HT=setTimeout(histPush,450);}
+function histGo(d){
+  const n=HI+d;if(n<0||n>=HIST.length)return;
+  HI=n;HLOCK=true;KEEPCAM=true;
+  try{restore(JSON.parse(HIST[HI]));}finally{KEEPCAM=false;setTimeout(()=>{HLOCK=false;},800);}
+  histUi();pMsg(d<0?'Ångrade.':'Gjorde om.');
+}
+$('undoB').onclick=()=>histGo(-1);$('redoB').onclick=()=>histGo(1);
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey))return;
+  const t=e.target,tag=(t&&t.tagName)||'';
+  if(tag==='INPUT'&&t.type==='text')return;
+  const k=(e.key||'').toLowerCase();
+  if(k==='z'&&!e.shiftKey){e.preventDefault();histGo(-1);}
+  else if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();histGo(1);}
+});
