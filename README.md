@@ -103,3 +103,14 @@ Dubbelklicka på `start-publik.bat` (Mac/Linux: `./start-publik.sh`). Det starta
 - **Inköpslista per butik:** välj butik per rad, kryssa av medan du handlar och se vad som är kvar att betala. Sparas med ritningen.
 - **Säkerhetskopia:** servern kopierar `data/` till `data/backup/ÅÅÅÅ-MM-DD/` en gång per dygn och sparar 14 dagar.
 - **Installera som app:** öppna adressen på mobilen och välj *Lägg till på hemskärmen*. Kräver HTTPS (publik adress) eller `localhost`.
+
+## Fast gratisadress (Tailscale Funnel)
+
+Ger en adress som `https://din-dator.ditt-nät.ts.net` som aldrig ändras. Datorn måste vara på och servern igång.
+
+Gör en gång:
+1. Installera Tailscale från https://tailscale.com/download och logga in (gratis konto).
+2. Öppna https://login.tailscale.com/admin/dns och slå på **MagicDNS** och **HTTPS Certificates**.
+3. Första gången du kör `start-fast.bat` visar Tailscale en länk som slår på **Funnel** för datorn. Öppna länken och godkänn.
+
+Därefter räcker det att dubbelklicka på `start-fast.bat` (Mac/Linux: `./start-fast.sh`). Adressen skrivs ut i fönstret. Inställningarna för publikt läge (inloggning krävs för priser, stängd registrering efter första kontot) är samma som i `start-publik.bat`. Stäng av delningen med `tailscale funnel reset`.

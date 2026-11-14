@@ -68,7 +68,7 @@ const NAME_RE = /^[a-z0-9_-]{3,30}$/, WEEK = 30 * 24 * 3600 * 1000, TRIES = new 
 const hash = (pw, salt) => crypto.scryptSync(pw, salt, 64).toString('hex');
 const dfile = u => path.join(DATA, 'ritningar', u + '.json');
 const loadD = u => { const o = readJ(dfile(u), {}); return Object.assign(Object.create(null), o); };
-const isHttps = req => (req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+const isHttps = req => PUBLIC || (req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
 const ipOf = req => PUBLIC ? String(req.headers['cf-connecting-ip'] || (req.headers['x-forwarded-for'] || '').split(',')[0] || req.socket.remoteAddress || '').trim() : (req.socket.remoteAddress || '');
 function newSession(u, res, req) {
   const t = crypto.randomBytes(32).toString('hex'); SESS[t] = { u, exp: Date.now() + WEEK }; writeJ(SF, SESS);
