@@ -3,6 +3,7 @@
    Svaren sparas i 1 timme. */
 const http = require('http'), fs = require('fs'), path = require('path');
 const crypto = require('crypto');
+const PUBLIC = process.env.PUBLIC === '1';   // true när appen nås utifrån via tunnel/proxy
 const PORT = +process.env.PORT || 8080, HOST = process.env.HOST || '127.0.0.1', TTL = 60 * 60 * 1000;
 const ROOT = __dirname, CACHE = new Map();
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.md': 'text/plain; charset=utf-8' };
@@ -66,9 +67,11 @@ const NAME_RE = /^[a-z0-9_-]{3,30}$/, WEEK = 30 * 24 * 3600 * 1000, TRIES = new 
 const hash = (pw, salt) => crypto.scryptSync(pw, salt, 64).toString('hex');
 const dfile = u => path.join(DATA, 'ritningar', u + '.json');
 const loadD = u => { const o = readJ(dfile(u), {}); return Object.assign(Object.create(null), o); };
-function newSession(u, res) {
+const isHttps = req => (req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+const ipOf = req => PUBLIC ? String(req.headers['cf-connecting-ip'] || (req.headers['x-forwarded-for'] || '').split(',')[0] || req.socket.remoteAddress || '').trim() : (req.socket.remoteAddress || '');
+function newSession(u, res, req) {
   const t = crypto.randomBytes(32).toString('hex'); SESS[t] = { u, exp: Date.now() + WEEK }; writeJ(SF, SESS);
-  res.setHeader('set-cookie', 'sk=' + t + '; HttpOnly; SameSite=Strict; Path=/; Max-Age=' + WEEK / 1000);
+  res.setHeader('set-cookie', 'sk=' + t + '; HttpOnly; SameSite=Strict; Path=/; Max-Age=' + WEEK / 1000 + (isHttps(req) ? '; Secure' : ''));
 }
 function who(req) {
   const m = (req.headers.cookie || '').match(/(?:^|;\s*)sk=([a-f0-9]{64})/); if (!m) return null;
@@ -82,25 +85,26 @@ const send = (res, code, o) => { res.statusCode = code; res.setHeader('content-t
 function limited(ip) { const now = Date.now(), a = (TRIES.get(ip) || []).filter(t => now - t < 600000); TRIES.set(ip, a); return a.length >= 10; }
 
 async function konto(req, res, u) {
-  const p = u.pathname, ip = req.socket.remoteAddress || '';
+  const p = u.pathname, ip = ipOf(req);
   if (p === '/api/me') { const w = who(req); return send(res, 200, { user: w, admin: !!(w && USERS[w] && USERS[w].admin) }); }
   if (p === '/api/logout' && req.method === 'POST') {
     const m = (req.headers.cookie || '').match(/sk=([a-f0-9]{64})/); if (m) { delete SESS[m[1]]; writeJ(SF, SESS); }
-    res.setHeader('set-cookie', 'sk=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); return send(res, 200, { ok: 1 });
+    res.setHeader('set-cookie', 'sk=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0' + (isHttps(req) ? '; Secure' : '')); return send(res, 200, { ok: 1 });
   }
   if ((p === '/api/login' || p === '/api/register') && req.method === 'POST') {
     if (limited(ip)) return send(res, 429, { fel: 'För många försök. Vänta 10 minuter.' });
     const b = await body(req), n = String(b.user || '').trim().toLowerCase(), pw = String(b.pw || '');
     if (p === '/api/register') {
+      if (PUBLIC && Object.keys(USERS).length && process.env.ALLOW_REGISTER !== '1') return send(res, 403, { fel: 'Registrering är stängd. Be administratören skapa ditt konto.' });
       if (!NAME_RE.test(n)) return send(res, 400, { fel: 'Användarnamn: 3–30 tecken, a–z, 0–9, _ och -.' });
       if (pw.length < 6 || pw.length > 200) return send(res, 400, { fel: 'Lösenordet måste vara minst 6 tecken.' });
       if (USERS[n]) return send(res, 409, { fel: 'Användarnamnet är upptaget.' });
       const salt = crypto.randomBytes(16).toString('hex'); const first = !Object.keys(USERS).length; USERS[n] = { salt, hash: hash(pw, salt) }; if (first) USERS[n].admin = true; writeJ(UF, USERS);
-      newSession(n, res); return send(res, 200, { user: n, admin: !!USERS[n].admin });
+      newSession(n, res, req); return send(res, 200, { user: n, admin: !!USERS[n].admin });
     }
     const us = NAME_RE.test(n) && USERS[n], h = hash(pw, us ? us.salt : '00'.repeat(16));
     if (!us || !crypto.timingSafeEqual(Buffer.from(h), Buffer.from(us.hash))) { TRIES.get(ip).push(Date.now()); return send(res, 401, { fel: 'Fel användarnamn eller lösenord.' }); }
-    newSession(n, res); return send(res, 200, { user: n, admin: !!us.admin });
+    newSession(n, res, req); return send(res, 200, { user: n, admin: !!us.admin });
   }
   const w = who(req); if (!w) return send(res, 401, { fel: 'Inte inloggad.' });
   const adm = !!(USERS[w] && USERS[w].admin);
@@ -125,6 +129,14 @@ async function konto(req, res, u) {
   if (am) {
     if (!adm) return send(res, 403, { fel: 'Bara administratörer.' });
     const [, act, tu] = am;
+    if (act === 'create' && req.method === 'POST' && !tu) {
+      const b = await body(req), n = String(b.user || '').trim().toLowerCase(), pw = String(b.pw || '');
+      if (!NAME_RE.test(n)) return send(res, 400, { fel: 'Användarnamn: 3–30 tecken, a–z, 0–9, _ och -.' });
+      if (pw.length < 6 || pw.length > 200) return send(res, 400, { fel: 'Lösenordet måste vara minst 6 tecken.' });
+      if (USERS[n]) return send(res, 409, { fel: 'Användarnamnet är upptaget.' });
+      const salt = crypto.randomBytes(16).toString('hex'); USERS[n] = { salt, hash: hash(pw, salt), admin: !!b.admin }; writeJ(UF, USERS);
+      return send(res, 200, { ok: 1 });
+    }
     if (act === 'users' && req.method === 'GET' && !tu)
       return send(res, 200, Object.keys(USERS).map(u => ({ user: u, admin: !!USERS[u].admin, antal: Object.keys(loadD(u)).length, namn: Object.keys(loadD(u)) })));
     if (!tu || !USERS[tu]) return send(res, 404, { fel: 'Användaren finns inte.' });
@@ -156,6 +168,7 @@ const srv = http.createServer(async (req, res) => {
     try { return await konto(req, res, u); } catch (e) { return send(res, 400, { fel: String(e.message || e) }); }
   }
   if (u.pathname === '/api/pris') {
+    if (PUBLIC && !who(req)) return send(res, 401, { fel: 'Logga in för att hämta priser.' });
     const q = (u.searchParams.get('q') || '').trim().slice(0, 100);
     res.setHeader('content-type', 'application/json; charset=utf-8');
     if (!q) { res.statusCode = 400; return res.end('{"fel":"saknar q"}'); }

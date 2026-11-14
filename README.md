@@ -84,3 +84,13 @@ Det **första kontot** som skapas blir administratör. (Finns redan konton utan 
 - ser alla användares ritningar i appens lista som `användare/ritning`, och kan öppna, ändra, spara och ta bort dem
 - har en sida `admin.html` (länk "Admin" i appen) där man kan göra andra till admin, sätta nytt lösenord åt någon och ta bort konton
 - kan inte ta bort sig själv eller sin egen adminrätt
+
+## Nå appen från andra nät (publik adress)
+
+Dubbelklicka på `start-publik.bat` (Mac/Linux: `./start-publik.sh`). Det startar servern och en gratis Cloudflare-tunnel, som ger en publik `https://…trycloudflare.com`-adress. Den fungerar från vilken dator eller mobil som helst, i vilket nät som helst.
+
+- Datorn med servern måste vara på och skriptet igång. Adressen byts varje gång du startar om tunneln.
+- Första gången: installera tunneln med `winget install Cloudflare.cloudflared` (Windows).
+- I publikt läge är nya konton stängda: bara det första kontot (admin) kan skapas fritt, därefter skapar admin användare på `admin.html`. Priser från Byggmax kräver inloggning. Sätt `ALLOW_REGISTER=1` om du ändå vill ha öppen registrering.
+- Inloggningen skickas krypterat (HTTPS) via tunneln. Använd ett långt lösenord på adminkontot.
+- Vill du ha en fast adress som alltid är uppe utan din dator kan servern läggas på en molntjänst (till exempel en liten VPS eller Fly.io/Render med en disk för mappen `data/`).
