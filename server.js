@@ -118,7 +118,7 @@ const DATA = path.join(ROOT, 'data'); fs.mkdirSync(path.join(DATA, 'ritningar'),
 const UF = path.join(DATA, 'users.json'), SF = path.join(DATA, 'sessions.json');
 const readJ = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return d; } };
 const writeJ = (f, o) => { fs.writeFileSync(f + '.tmp', JSON.stringify(o)); fs.renameSync(f + '.tmp', f); };
-const HF = path.join(DATA, 'shares.json'), PF = path.join(DATA, 'prishistorik.json'); fs.mkdirSync(path.join(DATA, 'priser'), { recursive: true });
+const HF = path.join(DATA, 'shares.json'), PF = path.join(DATA, 'prishistorik.json'), LF = path.join(DATA, 'livestatus.json'); fs.mkdirSync(path.join(DATA, 'priser'), { recursive: true });
 let USERS = readJ(UF, {}), SESS = readJ(SF, {}), SHARES = readJ(HF, {});
 if (Object.keys(USERS).length && !Object.values(USERS).some(u => u.admin)) { USERS[Object.keys(USERS)[0]].admin = true; writeJ(UF, USERS); }
 const NAME_RE = /^[a-z0-9_-]{3,30}$/, WEEK = 30 * 24 * 3600 * 1000, TRIES = new Map();
@@ -262,7 +262,7 @@ function backup() {
     const dir = path.join(DATA, 'backup'), day = new Date().toISOString().slice(0, 10), to = path.join(dir, day);
     if (fs.existsSync(to)) return;
     fs.mkdirSync(to, { recursive: true });
-    for (const f of ['users.json', 'shares.json', 'prishistorik.json']) if (fs.existsSync(path.join(DATA, f))) fs.copyFileSync(path.join(DATA, f), path.join(to, f));
+    for (const f of ['users.json', 'shares.json', 'prishistorik.json', 'livestatus.json']) if (fs.existsSync(path.join(DATA, f))) fs.copyFileSync(path.join(DATA, f), path.join(to, f));
     fs.cpSync(path.join(DATA, 'ritningar'), path.join(to, 'ritningar'), { recursive: true });
     fs.cpSync(path.join(DATA, 'priser'), path.join(to, 'priser'), { recursive: true });
     fs.readdirSync(dir).filter(n => /^\d{4}-\d{2}-\d{2}$/.test(n)).sort().slice(0, -14).forEach(n => fs.rmSync(path.join(dir, n), { recursive: true, force: true }));
@@ -274,20 +274,25 @@ backup(); setInterval(backup, 3600 * 1000).unref();
 const srv = http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   if (u.pathname === '/api/prishistorik') {
-    if (PUBLIC && !who(req)) return send(res, 401, { fel: 'Inte inloggad.' });
-    const H = readJ(PF, {});
+    const wu = who(req);
     if (req.method === 'POST') {
+      if (PUBLIC && !wu) return send(res, 401, { fel: 'Inte inloggad.' });
       try {
-        const b = await body(req), arr = Array.isArray(b) ? b.slice(0, 200) : [], now = Date.now();
+        const b = await body(req), arr = Array.isArray(b) ? b.slice(0, 400) : [], now = Date.now(), H = readJ(PF, {}), L = readJ(LF, {});
         for (const x of arr) {
-          const pr = +x.pris; if (!isFinite(pr) || pr <= 0 || pr > 1e7) continue;
-          const k = String(x.butik || '').slice(0, 40) + '|' + String(x.namn || '').slice(0, 120), a = H[k] = H[k] || [], last = a[a.length - 1];
+          const k = String(x.butik || '').slice(0, 40) + '|' + String(x.namn || '').slice(0, 120), pr = +x.pris;
+          if (['live', 'saknas', 'ingen', 'eget'].includes(x.status)) L[k] = { s: x.status, t: now };
+          if (!isFinite(pr) || pr <= 0 || pr > 1e7) continue;
+          const a = H[k] = H[k] || [], last = a[a.length - 1];
           if (!last || Math.abs(pr - last[1]) / last[1] > 0.005 || now - last[0] > 24 * 3600 * 1000) { a.push([now, Math.round(pr * 100) / 100]); if (a.length > 200) a.shift(); }
+          if (!L[k]) L[k] = { s: 'live', t: now };
         }
-        writeJ(PF, H); return send(res, 200, { ok: 1 });
+        writeJ(PF, H); writeJ(LF, L); return send(res, 200, { ok: 1 });
       } catch (e) { return send(res, 400, { fel: String(e.message || e) }); }
     }
-    return send(res, 200, { serier: Object.entries(H).map(([k, v]) => { const i = k.indexOf('|'); return { butik: k.slice(0, i), namn: k.slice(i + 1), punkter: v }; }) });
+    if (!(wu && USERS[wu] && USERS[wu].admin)) return send(res, 403, { fel: 'Bara administratörer ser live-priser och historik.' });
+    const H = readJ(PF, {}), L = readJ(LF, {}), keys = new Set([...Object.keys(H), ...Object.keys(L)]);
+    return send(res, 200, { serier: [...keys].map(k => { const i = k.indexOf('|'); return { butik: k.slice(0, i), namn: k.slice(i + 1), status: (L[k] || { s: 'live' }).s, t: (L[k] || {}).t || 0, punkter: H[k] || [] }; }) });
   }
   if (u.pathname.startsWith('/api/') && u.pathname !== '/api/pris' && u.pathname !== '/api/ping') {
     try { return await konto(req, res, u); } catch (e) { return send(res, 400, { fel: String(e.message || e) }); }

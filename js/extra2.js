@@ -158,7 +158,8 @@ async function cmpRun(){
       const o=ownPrice(r,s);
       if(o!=null){pr[s]=o;own[s]=1;return;}
       const v=sp.price(((out[specKey(sp)]||{})[s])||[]);
-      if(v!=null&&guardOk(r,v)){pr[s]=Math.round(v*100)/100;log.push({butik:s,namn:r.name,pris:pr[s]});}
+      if(v!=null&&guardOk(r,v)){pr[s]=Math.round(v*100)/100;log.push({butik:s,namn:r.name,pris:pr[s],status:'live'});}
+      else log.push({butik:s,namn:r.name,status:'saknas'});
     });
     const vals=Object.entries(pr);if(!vals.length)return;
     const mn=vals.reduce((x,y)=>y[1]<x[1]?y:x);
@@ -241,5 +242,6 @@ async function histShow(){
   const mk=(id,title,inner)=>{const d=document.createElement('details');d.className='dd';d.innerHTML='<summary>'+title+'</summary>'+inner;return d;};
   const a=mk('','Mina priser (per butik)','<div id="pbBox"></div>'),h=mk('','Prishistorik','<div class="tools" style="margin:6px 0"><button type="button" id="histBtn">Visa prishistorik</button></div><div id="histOut"></div>');
   $('catBox').closest('details').after(h);$('catBox').closest('details').after(a);
+  h.id='histPanel';h.hidden=true;                  // visas bara för administratören (se konto.js)
   $('histBtn').onclick=histShow;renderPB();
 })();

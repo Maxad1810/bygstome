@@ -63,13 +63,14 @@ async function histLog(items){if(!items.length)return;try{await fetch('/api/pris
     if(busy)return;busy=true;$('liveBtn').disabled=true;msg('Hämtar … (det kan ta några minuter)');for(const k in MEMO)delete MEMO[k];
     let ok=0,miss=0,own=0,err='';const log=[];
     for(const [i,r] of ROWS.entries()){
-      const sp=liveSpec(r);if(!sp)continue;
-      if(ownP(r,'Byggmax')!=null){own++;continue;}
+      const sp=liveSpec(r);
+      if(!sp){if(r.mode)log.push({butik:'Byggmax',namn:r.name,status:'ingen'});continue;}
+      if(ownP(r,'Byggmax')!=null){own++;log.push({butik:'Byggmax',namn:r.name,status:'eget'});continue;}
       try{
         const k=specKey(sp);if(!(k in MEMO))MEMO[k]=await fetchPris(sp,'Byggmax');
         let p=sp.price(MEMO[k]);
-        if(p!=null&&guardOk(r,p)){p=Math.round(p*100)/100;r.p=p;PRICE_OV[r.key]=p;const inp=document.querySelector('input.pr[data-r="'+i+'"]');if(inp)inp.value=p;ok++;log.push({butik:'Byggmax',namn:r.name,pris:p});}
-        else miss++;
+        if(p!=null&&guardOk(r,p)){p=Math.round(p*100)/100;r.p=p;PRICE_OV[r.key]=p;const inp=document.querySelector('input.pr[data-r="'+i+'"]');if(inp)inp.value=p;ok++;log.push({butik:'Byggmax',namn:r.name,pris:p,status:'live'});}
+        else{miss++;log.push({butik:'Byggmax',namn:r.name,status:'saknas'});}
       }catch(e){err=e.message;break;}
     }
     totals();try{renderCats();}catch(e){}

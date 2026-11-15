@@ -141,3 +141,7 @@ Butikernas sidor ser olika ut och kan ändras, så träffarna är bäst-möjligt
 - **Egna priser per butik:** skriv in ett pris på en rad och tryck på ★ bredvid det. Appen kommer ihåg det för raden och butiken, markerar fältet och använder det före riktpris och live-pris. Allt finns under *Mina priser (per butik)*. Med konto följer de dig till andra enheter, annars sparas de i webbläsaren.
 - **Prishistorik:** varje hämtat pris sparas på servern (`data/prishistorik.json`). Under *Prishistorik* ser du först och senaste pris, förändring i procent och en liten kurva per material och butik.
 - **Prisvarning:** när du trycker Spara noteras priserna i kalkylen. När live-priserna sedan hämtas (även den automatiska hämtningen varje timme) visas en rad som "Kalkylen är 8 % dyrare nu" om skillnaden är minst 2 %.
+
+## Admin: live-priser
+
+Bara administratören ser vilka material som har live-pris. På `admin.html` finns fliken **Live-priser** med alla material och butiker, status (*Live-pris*, *Hittades inte*, *Ingen live-koppling*, *Eget pris*), senaste pris, förändring och en liten kurva. Du kan filtrera på status och butik. Listan fylls på varje gång någon hämtar live-priser eller jämför butiker. Panelen *Prishistorik* i appen och själva uppgifterna (`/api/prishistorik`) är nu bara tillgängliga för admin.

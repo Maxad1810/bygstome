@@ -67,6 +67,7 @@
     }catch(e){pMsg('Kunde inte stoppa delningen.');}
   };
   topBar(me,adm);
+  if(adm){const hp=$('histPanel');if(hp)hp.hidden=false;}
   pList();
 })();
 

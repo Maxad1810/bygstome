@@ -6,6 +6,7 @@
 <title>Admin – Stomkalkyl</title>
 <link rel="stylesheet" href="styles.css">
 <style>
+[hidden]{display:none!important}
 main{max-width:760px;margin:24px auto;padding:0 16px}
 table{width:100%;border-collapse:collapse}
 td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
@@ -15,6 +16,9 @@ td button{padding:5px 9px;margin:2px 2px 2px 0;font-size:14px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:0;z-index:50;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
 #lg label{display:block;margin:10px 0}
 #lg{max-width:340px}
+#tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.bd{display:inline-block;padding:1px 7px;border-radius:9px;font-size:12px;background:var(--soft)}
+.bd.live{background:#1b7a3a;color:#fff}.bd.saknas{background:#b3261e;color:#fff}
 </style>
 </head>
 <body>
@@ -22,6 +26,7 @@ td button{padding:5px 9px;margin:2px 2px 2px 0;font-size:14px}
 <main><div class="panel">
 <h1>Admin</h1>
 <div id="msg" role="status" class="note"></div>
+<div id="tabs" class="tools" style="margin:8px 0" hidden><button type="button" id="tU" aria-pressed="true">Användare</button><button type="button" id="tL" aria-pressed="false">Live-priser</button></div>
 <form id="lg" hidden>
 <p class="note">Logga in med ett administratörskonto.</p>
 <label>Användarnamn<input id="u" autocomplete="username" required autocapitalize="none" spellcheck="false"></label>
@@ -39,6 +44,13 @@ td button{padding:5px 9px;margin:2px 2px 2px 0;font-size:14px}
 <button type="submit" style="margin-top:8px">Skapa</button>
 </form>
 <p class="note" id="hint" hidden>Som admin ser du alla användares ritningar i appens lista som <i>användare/ritning</i> och kan öppna, ändra och ta bort dem där.</p>
+<div id="liveTab" hidden>
+<p class="note">Här ser bara administratören vilka material som har live-pris, vilka som saknar det och senaste hämtade priser. Listan fylls på varje gång någon hämtar live-priser eller jämför butiker i appen.</p>
+<div class="tools" style="margin:6px 0"><label style="margin:0">Visa<select id="fSt" style="width:auto"><option value="">Alla</option><option value="live">Har live-pris</option><option value="saknas">Hittades inte</option><option value="ingen">Ingen live-koppling</option><option value="eget">Eget pris används</option></select></label>
+<label style="margin:0">Butik<select id="fBu" style="width:auto"><option value="">Alla</option></select></label><button type="button" id="lvRef">Uppdatera</button></div>
+<div id="lvSum" class="note"></div>
+<div class="scroll"><table><thead><tr><th>Material</th><th>Butik</th><th>Status</th><th style="text-align:right">Senaste pris</th><th style="text-align:right">Ändring</th><th></th></tr></thead><tbody id="lvRows"></tbody></table></div>
+</div>
 </div></main>
 <script>
 const $=id=>document.getElementById(id);let ME='',ARM=null;
@@ -47,7 +59,39 @@ async function api(u,m,b){
   let r;try{r=await fetch(u,{method:m||'GET',headers:{'content-type':'application/json'},body:b?JSON.stringify(b):undefined});}
   catch(e){throw new Error('Hittar ingen server. Starta appen med start.bat / start.sh och öppna adminsidan därifrån (http://localhost:8080/admin.html).');}
   const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.fel||('Fel '+r.status));return j;}
-const show=(login)=>{$('lg').hidden=!login;$('adm').hidden=login;$('hint').hidden=login;$('cu').hidden=login;$('out').hidden=login&&!ME;};
+let TAB='u',LOGIN=true;
+const show=(login)=>{LOGIN=login;$('lg').hidden=!login;$('tabs').hidden=login;$('out').hidden=login&&!ME;applyTab();};
+function applyTab(){const u=!LOGIN&&TAB==='u',l=!LOGIN&&TAB==='l';$('adm').hidden=!u;$('hint').hidden=!u;$('cu').hidden=!u;$('liveTab').hidden=!l;$('tU').setAttribute('aria-pressed',TAB==='u');$('tL').setAttribute('aria-pressed',TAB==='l');}
+$('tU').onclick=()=>{TAB='u';applyTab();};
+$('tL').onclick=()=>{TAB='l';applyTab();loadLive();};
+let LV=[];
+const dt=t=>t?new Date(t).toLocaleString('sv-SE',{dateStyle:'short',timeStyle:'short'}):'';
+const nfp=(v,d=2)=>v.toLocaleString('sv-SE',{minimumFractionDigits:d,maximumFractionDigits:d});
+const lab={live:'Live-pris',saknas:'Hittades inte',ingen:'Ingen koppling',eget:'Eget pris'};
+async function loadLive(){
+  try{LV=(await api('/api/prishistorik')).serier||[];}catch(e){msg(e.message);return;}
+  const bu=[...new Set(LV.map(x=>x.butik))].sort(),cur=$('fBu').value;
+  $('fBu').innerHTML='<option value="">Alla</option>'+bu.map(b=>'<option'+(b===cur?' selected':'')+'>'+b.replace(/</g,'&lt;')+'</option>').join('');
+  drawLive();
+}
+function drawLive(){
+  const fs=$('fSt').value,fb=$('fBu').value,rows=LV.filter(x=>(!fs||x.status===fs)&&(!fb||x.butik===fb)).sort((a,b)=>a.namn.localeCompare(b.namn,'sv')||a.butik.localeCompare(b.butik));
+  const c={};LV.forEach(x=>c[x.status]=(c[x.status]||0)+1);
+  $('lvSum').textContent=LV.length?(c.live||0)+' har live-pris, '+(c.saknas||0)+' hittades inte, '+(c.ingen||0)+' har ingen live-koppling'+(c.eget?', '+c.eget+' använder eget pris':'')+'.':'Inga live-priser har hämtats än. Hämta dem i appen först.';
+  const tb=$('lvRows');tb.innerHTML='';
+  rows.forEach(x=>{
+    const tr=document.createElement('tr'),p=x.punkter,l=p[p.length-1],f=p[0],pct=l&&f&&p.length>1?(l[1]-f[1])/f[1]*100:null;
+    const c1=document.createElement('td');c1.textContent=x.namn;
+    const c2=document.createElement('td');c2.textContent=x.butik;
+    const c3=document.createElement('td'),b=document.createElement('span');b.className='bd '+x.status;b.textContent=lab[x.status]||x.status;c3.appendChild(b);
+    const c4=document.createElement('td');c4.className='n';c4.style.textAlign='right';c4.textContent=l?nfp(l[1]):'–';if(l){const s=document.createElement('small');s.textContent=dt(l[0]);c4.appendChild(s);}
+    const c5=document.createElement('td');c5.style.textAlign='right';c5.textContent=pct==null?'–':(pct>0?'+':'')+nfp(pct,1)+' %';if(pct!=null)c5.style.color=pct>0.5?'#b3261e':pct<-0.5?'#1b7a3a':'inherit';
+    const c6=document.createElement('td');
+    if(p.length>1){const v=p.map(q=>q[1]),mn=Math.min(...v),mx=Math.max(...v);c6.innerHTML='<svg width="70" height="18" aria-hidden="true"><polyline fill="none" stroke="currentColor" stroke-width="1.5" points="'+v.map((y,i)=>(i/(v.length-1)*70).toFixed(1)+','+(mx===mn?9:16-(y-mn)/(mx-mn)*14).toFixed(1)).join(' ')+'"/></svg>';}
+    tr.append(c1,c2,c3,c4,c5,c6);tb.appendChild(tr);
+  });
+}
+$('fSt').onchange=drawLive;$('fBu').onchange=drawLive;$('lvRef').onclick=loadLive;
 $('cu').onsubmit=async e=>{e.preventDefault();try{await api('/api/admin/create','POST',{user:$('nu').value,pw:$('np').value,admin:$('na').checked});msg('Skapade '+$('nu').value.toLowerCase()+'.');$('nu').value='';$('np').value='';$('na').checked=false;await load();}catch(x){msg(x.message);}};
 $('out').onclick=async()=>{try{await api('/api/logout','POST',{});}catch(e){}ME='';$('who').textContent='Stomkalkyl – admin';$('rows').innerHTML='';msg('Du är utloggad.');show(true);};
 $('lg').onsubmit=async e=>{e.preventDefault();msg('');try{await api('/api/login','POST',{user:$('u').value,pw:$('p').value});$('p').value='';await load();}catch(x){msg(x.message);}};
