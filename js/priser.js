@@ -39,6 +39,7 @@ function bmQ(name){
   else if(/^Dörr\s\d/.test(name))q='ytterdörr';
   return q;
 }
+function priceFor(n,k,p){return PRICE_OV[k]!=null?PRICE_OV[k]:p;}
 function bmUrl(name){return 'https://www.google.com/search?q='+encodeURIComponent('site:byggmax.se '+bmQ(name));}
 const UNIT={lm:'kr/m',plat:'kr/m²','st':'kr/st','m':'kr/m','m²':'kr/m²','m3':'kr/m³',rull:'kr/rulle'};
 function rowCost(r){return r.mode?r.p*r.q*((r.mode==='lm'||r.mode==='plat')?r.len:1):0;}
@@ -61,9 +62,9 @@ function renderRes(sec){
       const q=parseFloat(String(r[1]).replace(/[^\d,]/g,'').replace(',','.'))||0;
       const lm=String(r[2]).match(/(?:längd|à)\s*(\d+(?:,\d+)?)\s*m/);
       const len=lm?parseFloat(lm[1].replace(',','.')):4.8;
-      let p=rule?rule[2](r[0]):0;if(PRICE_OV[key]!=null)p=PRICE_OV[key];
+      let p=rule?rule[2](r[0]):0;p=priceFor(r[0],key,p);
       ROWS.push({si,sec:title,name:r[0],qty:r[1],note:r[2],q,len,mode:rule?rule[1]:null,key,p});
-      h+=`<tr><td>${r[0]}<small>${r[2]}</small></td><td class="n">${r[1]}</td><td>${rule?`<input class="pr" type="number" step="any" min="0" data-r="${idx}" value="${p}" aria-label="Pris för ${r[0]}"><small class="u">${UNIT[rule[1]]}</small><a class="bl" href="${bmUrl(r[0])}" target="_blank" rel="noopener" title="Sök på byggmax.se" aria-label="Sök ${r[0]} på byggmax.se">↗</a>`:''}</td><td class="n" id="rt${idx}"></td></tr>`;
+      h+=`<tr><td>${r[0]}<small>${r[2]}</small></td><td class="n">${r[1]}</td><td>${rule?`<input class="pr" type="number" step="any" min="0" data-r="${idx}" value="${p}" aria-label="Pris för ${r[0]}"><small class="u">${UNIT[rule[1]]}</small><a class="bl" href="${bmUrl(r[0])}" target="_blank" rel="noopener" title="Sök på byggmax.se" aria-label="Sök ${r[0]} på byggmax.se">↗</a><button type="button" class="own" data-r="${idx}" title="Kom ihåg det här priset för butiken" aria-label="Kom ihåg priset för ${r[0]}">★</button>`:''}</td><td class="n" id="rt${idx}"></td></tr>`;
     });
   });
   h+='<tr class="sec gt"><td colspan="3">Totalt (inkl. moms)</td><td class="n" id="gt"></td></tr></tbody>';

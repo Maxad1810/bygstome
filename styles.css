@@ -77,3 +77,8 @@ details.dd[open]>summary{border-bottom:1px solid var(--line);margin-bottom:8px}
 .catg{margin:0 0 10px}.catn{display:flex;justify-content:space-between;background:var(--soft);padding:5px 8px;border-radius:4px}
 .catr{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:3px 8px;font-size:14px;border-bottom:1px solid var(--line)}
 .catr span:nth-child(2),.catr span:nth-child(3){text-align:right;white-space:nowrap}
+
+button.own{padding:1px 6px;margin-left:4px;font-size:13px;line-height:1.3;background:transparent;border:1px solid var(--line);color:var(--muted)}
+button.own:hover{color:var(--accent);border-color:var(--accent)}
+.pr.ownp{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+#prisBanner{margin:6px 0;padding:8px 10px;border-radius:4px;background:var(--soft);border-left:4px solid var(--accent)}

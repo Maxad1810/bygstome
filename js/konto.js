@@ -26,6 +26,13 @@
   let SRV={};
   try{const r=await fetch('/api/ritningar');if(!r.ok)throw 0;SRV=await r.json();}catch(e){pMsg('Kunde inte hämta sparade ritningar från servern.');return;}
   const url=n=>'/api/ritningar/'+encodeURIComponent(n);
+  try{                                          // egna priser följer kontot
+    const r=await fetch('/api/priser');if(r.ok){const rem=await r.json();
+      if(Object.keys(rem).length){PBOOK=rem;try{localStorage.setItem('sk-pbook',JSON.stringify(PBOOK));}catch(e){}}
+      else if(Object.keys(PBOOK).length)fetch('/api/priser',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(PBOOK)});
+      PBREMOTE=o=>fetch('/api/priser',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(o)}).catch(()=>{});
+      calc();}
+  }catch(e){}
   pAll=()=>Object.assign({},SRV);
   pPut=o=>{
     const old=SRV;SRV=o;

@@ -22,7 +22,7 @@ const PRICE = /(\d[\d\s]*[.,]\d{1,2}|\d{2,5})\s*(?:kr|:-)\s*\/?\s*(m²|m2|m|st)?
 const toNum = s => parseFloat(String(s).replace(/\s/g, '').replace(',', '.'));
 const unitOf = u => !u ? '' : u.toLowerCase() === 'm2' ? 'm²' : u.toLowerCase();
 
-async function hamta(q, BASE) {
+async function hamta(q, BASE, enhet, must) {
   const b = await browser(), ctx = await b.newContext({ locale: 'sv-SE', userAgent: 'Mozilla/5.0 (X11; Linux x86_64) Chrome/120 Safari/537.36' }), page = await ctx.newPage();
   try {
     page.setDefaultTimeout(15000);
@@ -35,18 +35,19 @@ async function hamta(q, BASE) {
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
     if (!/-p\d{5,}/.test(page.url())) {
       const dim = (q.match(/\d+x\d+/) || [''])[0];
+      let mre = null; if (must) { try { mre = new RegExp(must, 'i'); } catch (e) {} }
       const links = await page.$$eval('a[href*="-p0"]', as => as.map(a => ({ href: a.href, text: (a.innerText || a.getAttribute('aria-label') || a.title || '').replace(/\s+/g, ' ').trim() })));
-      const pick = links.find(l => dim && l.text.toLowerCase().includes(dim)) || links.find(l => dim && l.href.includes(dim.replace('x', 'x'))) || links[0];
+      const pick = mre ? links.find(l => mre.test(l.text)) : (links.find(l => dim && l.text.toLowerCase().includes(dim)) || links.find(l => dim && l.href.includes(dim)) || links[0]);
       if (!pick) return [];
       await page.goto(pick.href, { waitUntil: 'domcontentloaded' });
     }
     await page.waitForFunction(() => /\d\s*(kr|:-)\s*\/?\s*(m|st|m²|m2)?\b/i.test(document.body.innerText), null, { timeout: 15000 }).catch(() => {});
     const name = (await page.locator('h1').first().innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
     const txt = await page.evaluate(() => document.body.innerText);
-    const m = txt.match(PRICE);
+    const all = [...txt.matchAll(new RegExp(PRICE.source, 'gi'))], m = all.find(x => x[2]) || all[0];   // helst ett pris med enhet (kr/m, kr/st …)
     if (!m) return [];
     let price = toNum(m[1]), unit = unitOf(m[2]);
-    if (unit !== 'm') { const L = lenOf(name); if (L && (unit === 'st' || !unit)) { price = Math.round(price / L * 100) / 100; unit = 'm'; } }
+    if (enhet === 'm' && unit !== 'm') { const L = lenOf(name); if (L && (unit === 'st' || !unit)) { price = Math.round(price / L * 100) / 100; unit = 'm'; } }
     return [{ name, price, unit, url: page.url() }];
   } finally { await ctx.close(); }
 }
@@ -82,7 +83,7 @@ async function xlKategori(page, url) {
   return res;
 }
 const XLC = {};
-async function hamtaXL(q, BASE) {
+async function hamtaXL(q, BASE, enhet) {
   const b = await browser(), ctx = await b.newContext({ locale: 'sv-SE' }), page = await ctx.newPage();
   try {
     page.setDefaultTimeout(15000);
@@ -94,17 +95,17 @@ async function hamtaXL(q, BASE) {
     const re = new RegExp('(^|\\D)(' + dim[1] + '\\s*[x×]\\s*' + dim[2] + '|' + dim[2] + '\\s*[x×]\\s*' + dim[1] + ')(\\D|$)', 'i');
     return all.filter(p => re.test(p.name)).map(p => {
       let { price, unit } = p;
-      if (unit !== 'm') { const L = lenOf(p.name); if (L && (unit === 'st' || unit === 'styck')) { price = Math.round(price / L * 100) / 100; unit = 'm'; } }
+      if (enhet === 'm' && unit !== 'm') { const L = lenOf(p.name); if (L && (unit === 'st' || unit === 'styck')) { price = Math.round(price / L * 100) / 100; unit = 'm'; } }
       return { name: p.name, price, unit, url: p.url };
     });
   } finally { await ctx.close(); }
 }
 
-async function pris(q, butik) {
-  butik = STORE_URL[butik] ? butik : 'Byggmax';
-  const ck = butik + '|' + q, hit = CACHE.get(ck);
+async function pris(q, butik, enhet, must) {
+  butik = STORE_URL[butik] ? butik : 'Byggmax'; enhet = enhet === 'm' ? 'm' : ''; must = String(must || '').slice(0, 80);
+  const ck = butik + '|' + q + '|' + enhet + '|' + must, hit = CACHE.get(ck);
   if (hit && Date.now() - hit.t < TTL) return { ...hit.d, cached: true };
-  const job = QUEUE.then(() => (butik === 'XL-BYGG Kiruna' ? hamtaXL : hamta)(q, STORE_URL[butik]));          // en sökning i taget
+  const job = QUEUE.then(() => (butik === 'XL-BYGG Kiruna' ? hamtaXL(q, STORE_URL[butik], enhet) : hamta(q, STORE_URL[butik], enhet, must)));          // en sökning i taget
   QUEUE = job.catch(() => {});
   const d = { q, butik, hamtad: new Date().toISOString(), produkter: await job };
   if (d.produkter.length) CACHE.set(ck, { t: Date.now(), d });
@@ -117,7 +118,7 @@ const DATA = path.join(ROOT, 'data'); fs.mkdirSync(path.join(DATA, 'ritningar'),
 const UF = path.join(DATA, 'users.json'), SF = path.join(DATA, 'sessions.json');
 const readJ = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return d; } };
 const writeJ = (f, o) => { fs.writeFileSync(f + '.tmp', JSON.stringify(o)); fs.renameSync(f + '.tmp', f); };
-const HF = path.join(DATA, 'shares.json');
+const HF = path.join(DATA, 'shares.json'), PF = path.join(DATA, 'prishistorik.json'); fs.mkdirSync(path.join(DATA, 'priser'), { recursive: true });
 let USERS = readJ(UF, {}), SESS = readJ(SF, {}), SHARES = readJ(HF, {});
 if (Object.keys(USERS).length && !Object.values(USERS).some(u => u.admin)) { USERS[Object.keys(USERS)[0]].admin = true; writeJ(UF, USERS); }
 const NAME_RE = /^[a-z0-9_-]{3,30}$/, WEEK = 30 * 24 * 3600 * 1000, TRIES = new Map();
@@ -170,6 +171,18 @@ async function konto(req, res, u) {
     return send(res, 200, { name: sh.name, data: d });
   }
   const w = who(req); if (!w) return send(res, 401, { fel: 'Inte inloggad.' });
+  if (p === '/api/priser') {                              // egna priser per butik, per konto
+    const f = path.join(DATA, 'priser', w + '.json');
+    if (req.method === 'GET') return send(res, 200, readJ(f, {}));
+    if (req.method === 'PUT') {
+      const b = await body(req), out = {};
+      if (!b || typeof b !== 'object') return send(res, 400, { fel: 'Ogiltigt.' });
+      for (const st of Object.keys(b).slice(0, 20)) { const o = {}; const src = b[st] || {};
+        for (const nm of Object.keys(src).slice(0, 500)) { const e = src[nm]; if (e && isFinite(+e.p) && +e.p >= 0) o[String(nm).slice(0, 120)] = { p: +e.p, d: String(e.d || '').slice(0, 10) }; }
+        out[String(st).slice(0, 40)] = o; }
+      writeJ(f, out); return send(res, 200, { ok: 1 });
+    }
+  }
   const adm = !!(USERS[w] && USERS[w].admin);
   if (p === '/api/ritningar' && req.method === 'GET') {
     const d = loadD(w);
@@ -249,8 +262,9 @@ function backup() {
     const dir = path.join(DATA, 'backup'), day = new Date().toISOString().slice(0, 10), to = path.join(dir, day);
     if (fs.existsSync(to)) return;
     fs.mkdirSync(to, { recursive: true });
-    for (const f of ['users.json', 'shares.json']) if (fs.existsSync(path.join(DATA, f))) fs.copyFileSync(path.join(DATA, f), path.join(to, f));
+    for (const f of ['users.json', 'shares.json', 'prishistorik.json']) if (fs.existsSync(path.join(DATA, f))) fs.copyFileSync(path.join(DATA, f), path.join(to, f));
     fs.cpSync(path.join(DATA, 'ritningar'), path.join(to, 'ritningar'), { recursive: true });
+    fs.cpSync(path.join(DATA, 'priser'), path.join(to, 'priser'), { recursive: true });
     fs.readdirSync(dir).filter(n => /^\d{4}-\d{2}-\d{2}$/.test(n)).sort().slice(0, -14).forEach(n => fs.rmSync(path.join(dir, n), { recursive: true, force: true }));
     console.log('Säkerhetskopia sparad: data/backup/' + day);
   } catch (e) { console.error('Säkerhetskopian misslyckades:', e.message); }
@@ -259,6 +273,22 @@ backup(); setInterval(backup, 3600 * 1000).unref();
 
 const srv = http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
+  if (u.pathname === '/api/prishistorik') {
+    if (PUBLIC && !who(req)) return send(res, 401, { fel: 'Inte inloggad.' });
+    const H = readJ(PF, {});
+    if (req.method === 'POST') {
+      try {
+        const b = await body(req), arr = Array.isArray(b) ? b.slice(0, 200) : [], now = Date.now();
+        for (const x of arr) {
+          const pr = +x.pris; if (!isFinite(pr) || pr <= 0 || pr > 1e7) continue;
+          const k = String(x.butik || '').slice(0, 40) + '|' + String(x.namn || '').slice(0, 120), a = H[k] = H[k] || [], last = a[a.length - 1];
+          if (!last || Math.abs(pr - last[1]) / last[1] > 0.005 || now - last[0] > 24 * 3600 * 1000) { a.push([now, Math.round(pr * 100) / 100]); if (a.length > 200) a.shift(); }
+        }
+        writeJ(PF, H); return send(res, 200, { ok: 1 });
+      } catch (e) { return send(res, 400, { fel: String(e.message || e) }); }
+    }
+    return send(res, 200, { serier: Object.entries(H).map(([k, v]) => { const i = k.indexOf('|'); return { butik: k.slice(0, i), namn: k.slice(i + 1), punkter: v }; }) });
+  }
   if (u.pathname.startsWith('/api/') && u.pathname !== '/api/pris' && u.pathname !== '/api/ping') {
     try { return await konto(req, res, u); } catch (e) { return send(res, 400, { fel: String(e.message || e) }); }
   }
@@ -267,7 +297,7 @@ const srv = http.createServer(async (req, res) => {
     const q = (u.searchParams.get('q') || '').trim().slice(0, 100);
     res.setHeader('content-type', 'application/json; charset=utf-8');
     if (!q) { res.statusCode = 400; return res.end('{"fel":"saknar q"}'); }
-    try { res.end(JSON.stringify(await pris(q, u.searchParams.get('butik') || 'Byggmax'))); }
+    try { res.end(JSON.stringify(await pris(q, u.searchParams.get('butik') || 'Byggmax', u.searchParams.get('enhet'), u.searchParams.get('must')))); }
     catch (e) { res.statusCode = 502; res.end(JSON.stringify({ fel: String(e.message || e) })); }
     return;
   }

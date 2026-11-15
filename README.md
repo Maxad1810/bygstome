@@ -134,3 +134,10 @@ Obs: `stomkal.kyl.se` skulle kräva att du äger domänen `kyl.se`. Det gör du 
 Under *Inköpslista per butik* finns knappen **Jämför priser mellan butiker**. Servern slår upp virke och limträ (kr/m) hos Byggmax, Beijer (beijerbygg.se/privat) och XL-BYGG Stenvalls i Kiruna med den osynliga webbläsaren. XL-BYGG läses från kategorisidorna *Plank & Reglar* och *Virke övrigt*, där priserna står i sidans text, visar billigast per rad och vad allt kostar hos varje butik. *Välj billigaste butik och pris per rad* fyller i butik och pris åt dig. Hämtningen tar flera minuter första gången (svaren sparas i en timme) och kräver att servern körs och att du är inloggad.
 
 Butikernas sidor ser olika ut och kan ändras, så träffarna är bäst-möjligt. Rader som en butik saknar visas med "–". Kontrollera alltid priset i butiken innan du köper.
+
+## Fler live-priser, egna priser och prishistorik
+
+- **Fler varor med live-pris:** förutom virke och limträ hämtas nu isolering (kr/m²), ångspärr, vindpapp, takpapp, takplåt, gips-, vindskydds- och golvskivor samt fasadpanel. Priset räknas om till radens enhet (till exempel pris per paket delat med antal m² i namnet). Skruv och beslag säljs i förpackningar som varierar mycket och har kvar riktpriser. Ett pris som är mer än fem gånger för högt eller lågt jämfört med riktpriset avvisas som en feltolkning. Jämförelsen mellan butiker gäller samma varor (XL-BYGG läses bara för virke).
+- **Egna priser per butik:** skriv in ett pris på en rad och tryck på ★ bredvid det. Appen kommer ihåg det för raden och butiken, markerar fältet och använder det före riktpris och live-pris. Allt finns under *Mina priser (per butik)*. Med konto följer de dig till andra enheter, annars sparas de i webbläsaren.
+- **Prishistorik:** varje hämtat pris sparas på servern (`data/prishistorik.json`). Under *Prishistorik* ser du först och senaste pris, förändring i procent och en liten kurva per material och butik.
+- **Prisvarning:** när du trycker Spara noteras priserna i kalkylen. När live-priserna sedan hämtas (även den automatiska hämtningen varje timme) visas en rad som "Kalkylen är 8 % dyrare nu" om skillnaden är minst 2 %.

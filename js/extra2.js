@@ -1,5 +1,5 @@
 /* ---------- Alternativ, inköp per butik och offert ---------- */
-let ALTS=[],SHOP={},OFFER={};
+let ALTS=[],SHOP={},OFFER={},BASE=null,PBOOK={},PBREMOTE=null;
 const CMP={html:'',apply:false,best:{}},CSTORES=['Byggmax','Beijer','XL-BYGG Kiruna'];
 const STORES=['Byggmax','Beijer','XL-BYGG Kiruna','Bauhaus','Optimera','Hornbach','Annan'];
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -7,9 +7,9 @@ const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 /* spara alternativ, butiker och offertuppgifter tillsammans med ritningen */
 (function(){
   const s0=snap,r0=restore,rr0=renderRes;
-  snap=function(){const s=s0();s.alts=ALTS;s.shop=SHOP;s.offer=OFFER;return JSON.parse(JSON.stringify(s));};
-  restore=function(s){ALTS=(s&&s.alts)||[];SHOP=(s&&s.shop)||{};OFFER=(s&&s.offer)||{};r0(s);offerFill();};
-  renderRes=function(sec){rr0(sec);try{renderShop();renderAlts();}catch(e){console.error(e);}};
+  snap=function(){const s=s0();s.alts=ALTS;s.shop=SHOP;s.offer=OFFER;s.base=BASE;return JSON.parse(JSON.stringify(s));};
+  restore=function(s){ALTS=(s&&s.alts)||[];SHOP=(s&&s.shop)||{};OFFER=(s&&s.offer)||{};BASE=(s&&s.base)||null;r0(s);offerFill();};
+  renderRes=function(sec){rr0(sec);try{markOwn();renderShop();renderAlts();renderPB();}catch(e){console.error(e);}};
 })();
 
 /* ===== Jämför alternativ ===== */
@@ -32,7 +32,7 @@ function renderAlts(){
     const n=($('altName').value.trim()||'Alternativ '+(ALTS.length+1)).slice(0,30),s=snap();delete s.alts;
     ALTS.push({name:n,snap:s,tot:secTotals()});renderAlts();pMsg('Sparade alternativet ”'+n+'”. Tryck Spara för att behålla det med ritningen.');
   };
-  box.querySelectorAll('.altOpen').forEach(b=>b.onclick=()=>{const a=ALTS[+b.dataset.i],keep=ALTS;const s=JSON.parse(JSON.stringify(a.snap));s.alts=keep;s.shop=SHOP;s.offer=OFFER;restore(s);pMsg('Öppnade alternativet ”'+a.name+'”.');});
+  box.querySelectorAll('.altOpen').forEach(b=>b.onclick=()=>{const a=ALTS[+b.dataset.i],keep=ALTS;const s=JSON.parse(JSON.stringify(a.snap));s.alts=keep;s.shop=SHOP;s.offer=OFFER;s.base=BASE;restore(s);pMsg('Öppnade alternativet ”'+a.name+'”.');});
   box.querySelectorAll('.altDel').forEach(b=>b.onclick=()=>{ALTS.splice(+b.dataset.i,1);renderAlts();});
 }
 
@@ -55,9 +55,9 @@ function renderShop(){
   h+='<p class="note">Kryssa av medan du handlar. Avprickningen och butiksvalen sparas med ritningen när du trycker Spara.</p>';
   box.innerHTML=h;
   $('cmpBtn').onclick=cmpRun;if(CMP.apply)$('cmpApply').onclick=cmpApply;
-  $('shopDef').onchange=e=>{SHOP._def=e.target.value;renderShop();};
+  $('shopDef').onchange=e=>{SHOP._def=e.target.value;calc();};
   box.querySelectorAll('.shopC').forEach(c=>c.onchange=()=>{(SHOP[c.dataset.k]=SHOP[c.dataset.k]||{}).c=c.checked;renderShop();});
-  box.querySelectorAll('.shopS').forEach(c=>c.onchange=()=>{(SHOP[c.dataset.k]=SHOP[c.dataset.k]||{}).s=c.value;renderShop();});
+  box.querySelectorAll('.shopS').forEach(c=>c.onchange=()=>{(SHOP[c.dataset.k]=SHOP[c.dataset.k]||{}).s=c.value;calc();});
 }
 
 /* ===== Offert ===== */
@@ -137,40 +137,109 @@ async function offerPdf(){
   offerUi();renderAlts();renderShop();
 })();
 
-/* ===== Jämför priser mellan butiker (virke och limträ, kr/m) ===== */
+/* ===== Jämför priser mellan butiker ===== */
 async function cmpRun(){
-  const rows=ROWS.filter(r=>(r.mode==='lm'||r.mode==='m')&&/\d+x\d+/.test(r.name));
-  const qs=[...new Set(rows.map(r=>bmQ(r.name)))],tot=qs.length*CSTORES.length;let n=0;
-  const out={};$('cmpBtn').disabled=true;
+  const rows=ROWS.map(r=>({r,sp:liveSpec(r)})).filter(x=>x.sp);
+  const specs=new Map();rows.forEach(x=>specs.set(specKey(x.sp),x.sp));
+  const tot=specs.size*CSTORES.length;let n=0;const out={};$('cmpBtn').disabled=true;
   try{
-    for(const q of qs)for(const st of CSTORES){
+    for(const [k,sp] of specs)for(const st of CSTORES){
       $('cmpMsg').textContent=' Hämtar '+(++n)+' av '+tot+' … (kan ta flera minuter)';
-      try{const r=await fetch('/api/pris?q='+encodeURIComponent(q)+'&butik='+st),j=await r.json();
-        if(!r.ok)throw new Error(j.fel||'fel');(out[q]=out[q]||{})[st]=j.produkter||[];}
-      catch(e){if(/Inte inloggad|Playwright/.test(e.message)){throw e;}(out[q]=out[q]||{})[st]=[];}
+      try{(out[k]=out[k]||{})[st]=await fetchPris(sp,st);}
+      catch(e){if(/Inte inloggad|Playwright|Failed to fetch/.test(e.message))throw e;(out[k]=out[k]||{})[st]=[];}
     }
-  }catch(e){$('cmpMsg').textContent=' '+e.message+(/ping|fetch/i.test(e.message)?' Servern behövs för jämförelsen.':'');$('cmpBtn').disabled=false;return;}
-  const best={};let h='<div class="scroll"><table><thead><tr><th>Material</th>'+CSTORES.map(s=>'<th style="text-align:right">'+s+'</th>').join('')+'</tr></thead><tbody>';
-  const sum={},seen=new Set();CSTORES.forEach(s=>sum[s]=0);let cheap=0,covered=0;
-  rows.forEach(r=>{
-    const dim=r.name.match(/\d+x\d+/)[0],[a,b]=dim.split('x'),re=new RegExp('(^|\\D)('+a+'\\s*[x×]\\s*'+b+'|'+b+'\\s*[x×]\\s*'+a+')(\\D|$)','i'),q=bmQ(r.name);
-    const pr={};CSTORES.forEach(s=>{const p=((out[q]||{})[s]||[]).find(p=>p.unit==='m'&&re.test(p.name));if(p)pr[s]=p.price;});
+  }catch(e){$('cmpMsg').textContent=' '+e.message+(/Failed to fetch/.test(e.message)?' Servern behövs för jämförelsen.':'');$('cmpBtn').disabled=false;return;}
+  const best={},log=[],sum={};CSTORES.forEach(s=>sum[s]=0);let cheap=0,covered=0;
+  let h='<div class="scroll"><table><thead><tr><th>Material</th>'+CSTORES.map(s=>'<th style="text-align:right">'+s+'</th>').join('')+'</tr></thead><tbody>';
+  const mult=r=>r.q*((r.mode==='lm'||r.mode==='plat')?r.len:1);
+  rows.forEach(({r,sp})=>{
+    const pr={},own={};
+    CSTORES.forEach(s=>{
+      const o=ownPrice(r,s);
+      if(o!=null){pr[s]=o;own[s]=1;return;}
+      const v=sp.price(((out[specKey(sp)]||{})[s])||[]);
+      if(v!=null&&guardOk(r,v)){pr[s]=Math.round(v*100)/100;log.push({butik:s,namn:r.name,pris:pr[s]});}
+    });
     const vals=Object.entries(pr);if(!vals.length)return;
-    const mn=vals.reduce((x,y)=>y[1]<x[1]?y:x),cost=f=>f*(r.q*((r.mode==='lm')?r.len:1));
+    const mn=vals.reduce((x,y)=>y[1]<x[1]?y:x);
     best[r.key]={s:mn[0],p:mn[1]};
-    h+='<tr><td>'+esc(r.name)+'</td>'+CSTORES.map(s=>'<td class="n"'+(s===mn[0]?' style="font-weight:700;color:#1b7a3a"':'')+'>'+(pr[s]!=null?nf(pr[s],2):'–')+'</td>').join('')+'</tr>';
-    covered++;cheap+=cost(mn[1]);CSTORES.forEach(s=>{sum[s]+=cost(pr[s]!=null?pr[s]:r.p);});
+    h+='<tr><td>'+esc(r.name)+'</td>'+CSTORES.map(s=>'<td class="n"'+(s===mn[0]?' style="font-weight:700;color:#1b7a3a"':'')+'>'+(pr[s]!=null?nf(pr[s],2)+(own[s]?' ★':''):'–')+'</td>').join('')+'</tr>';
+    covered++;cheap+=mn[1]*mult(r);CSTORES.forEach(s=>{sum[s]+=(pr[s]!=null?pr[s]:r.p)*mult(r);});
   });
+  histLog(log);
   if(!covered){CMP.html='<p class="note">Hittade inga jämförbara priser. Kontrollera att servern är igång och försök igen.</p>';CMP.apply=false;}
   else{
-    h+='<tr class="sec"><td>Materialkostnad om allt köps hos</td>'+CSTORES.map(s=>'<td class="n">'+nf(sum[s])+'</td>').join('')+'</tr></tbody></table></div>';
-    const base=Math.max(...Object.values(sum));
-    h+='<p class="note">Kr/m. Grönt är billigast. Rader som en butik saknar räknas med riktpris i raden "köps hos". Köper du varje rad där den är billigast kostar dessa '+covered+' rader <b>'+nf(cheap)+' kr</b>.</p><div class="tools"><button type="button" class="primary" id="cmpApply">Välj billigaste butik och pris per rad</button></div>';
+    h+='<tr class="sec"><td>Kostnad för dessa rader om allt köps hos</td>'+CSTORES.map(s=>'<td class="n">'+nf(sum[s])+'</td>').join('')+'</tr></tbody></table></div>';
+    h+='<p class="note">Pris i radens enhet (kr/m, kr/m², kr/st eller kr/rulle). Grönt är billigast, ★ är ditt egna pris. Rader som en butik saknar räknas med radens nuvarande pris. Köper du varje rad där den är billigast kostar dessa '+covered+' rader <b>'+nf(cheap)+' kr</b>.</p><div class="tools"><button type="button" class="primary" id="cmpApply">Välj billigaste butik och pris per rad</button></div>';
     CMP.html=h;CMP.apply=true;CMP.best=best;
   }
   renderShop();
 }
 function cmpApply(){
-  Object.entries(CMP.best).forEach(([k,v])=>{(SHOP[k]=SHOP[k]||{}).s=v.s;PRICE_OV[k]=v.p;});
+  Object.entries(CMP.best).forEach(([k,v])=>{(SHOP[k]=SHOP[k]||{}).s=v.s;const r=ROWS.find(x=>x.key===k);if(r&&ownPrice(r,v.s)!=null)delete PRICE_OV[k];else PRICE_OV[k]=v.p;});
   calc();pMsg('Valde billigaste butik och pris för '+Object.keys(CMP.best).length+' rader.');
 }
+
+
+/* ===== Egna priser per butik (prisbok) ===== */
+const rowStore=r=>(SHOP[r.key]&&SHOP[r.key].s)||SHOP._def||'Byggmax';
+function ownPrice(r,st){const b=PBOOK[st||rowStore(r)];return b&&b[r.name]?b[r.name].p:null;}
+priceFor=function(name,key,p){
+  if(PRICE_OV[key]!=null)return PRICE_OV[key];
+  const st=(SHOP[key]&&SHOP[key].s)||SHOP._def||'Byggmax',b=PBOOK[st];
+  return b&&b[name]?b[name].p:p;
+};
+function pbLoad(){try{PBOOK=JSON.parse(localStorage.getItem('sk-pbook')||'{}')||{};}catch(e){PBOOK={};}}
+function pbSave(){try{localStorage.setItem('sk-pbook',JSON.stringify(PBOOK));}catch(e){}if(PBREMOTE)PBREMOTE(PBOOK);}
+function markOwn(){ROWS.forEach((r,i)=>{const inp=document.querySelector('input.pr[data-r="'+i+'"]');if(inp&&PRICE_OV[r.key]==null&&ownPrice(r)!=null){inp.classList.add('ownp');inp.title='Ditt eget pris hos '+rowStore(r);}});}
+function renderPB(){
+  const box=$('pbBox');if(!box)return;
+  const rows=[];Object.keys(PBOOK).sort().forEach(st=>Object.keys(PBOOK[st]).sort().forEach(n=>rows.push([st,n,PBOOK[st][n]])));
+  box.innerHTML=rows.length?'<div class="scroll"><table><thead><tr><th>Butik</th><th>Material</th><th style="text-align:right">Pris</th><th>Datum</th><th></th></tr></thead><tbody>'
+    +rows.map((x,i)=>'<tr><td>'+esc(x[0])+'</td><td>'+esc(x[1])+'</td><td class="n">'+nf(x[2].p,2)+'</td><td>'+esc(x[2].d||'')+'</td><td><button type="button" class="pbDel" data-i="'+i+'" style="padding:2px 8px">×</button></td></tr>').join('')+'</tbody></table></div>'
+    :'<p class="note">Inga egna priser än. Skriv in ett pris på en rad och tryck på ★ bredvid det, så kommer appen ihåg det för butiken som raden är kopplad till.</p>';
+  box.insertAdjacentHTML('beforeend','<p class="note">Egna priser används före riktpriser och live-priser. Ändrar du priset direkt på en rad gäller det bara den ritningen.</p>');
+  box.querySelectorAll('.pbDel').forEach(b=>b.onclick=()=>{const x=rows[+b.dataset.i];delete PBOOK[x[0]][x[1]];if(!Object.keys(PBOOK[x[0]]).length)delete PBOOK[x[0]];pbSave();calc();});
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('button.own');if(!b||!$('res').contains(b))return;
+  const r=ROWS[+b.dataset.r];if(!r)return;const st=rowStore(r);
+  (PBOOK[st]=PBOOK[st]||{})[r.name]={p:r.p,d:new Date().toISOString().slice(0,10)};
+  delete PRICE_OV[r.key];pbSave();calc();pMsg('Kom ihåg: '+r.name+' kostar '+nf(r.p,2)+' hos '+st+'.');
+});
+pbLoad();
+
+/* ===== Prisförändring sedan ritningen sparades ===== */
+function priceBase(){const p={};ROWS.forEach(r=>{if(r.mode)p[r.name]=r.p;});return p;}
+function deltaVsBase(){
+  if(!BASE||!BASE.p)return null;let now=0,old=0;
+  ROWS.forEach(r=>{if(!r.mode||BASE.p[r.name]==null)return;const m=r.q*((r.mode==='lm'||r.mode==='plat')?r.len:1);now+=r.p*m;old+=BASE.p[r.name]*m;});
+  return old>0?{kr:now-old,pct:(now-old)/old*100,d:BASE.d}:null;
+}
+function showPriceDelta(){
+  const b=$('prisBanner');if(!b)return;const d=deltaVsBase();
+  if(!d||Math.abs(d.pct)<2){b.hidden=true;return;}
+  b.hidden=false;b.textContent=(d.pct>0?'Kalkylen är ':'Kalkylen är ')+nf(Math.abs(d.pct),1)+' % '+(d.pct>0?'dyrare':'billigare')+' nu ('+(d.kr>0?'+':'')+nf(d.kr)+' kr) jämfört med när du sparade ritningen'+(d.d?' ('+d.d+')':'')+'.';
+}
+$('pjSave').addEventListener('click',()=>{BASE={p:priceBase(),d:new Date().toISOString().slice(0,10)};showPriceDelta();},true);   // körs före själva sparandet
+
+/* ===== Prishistorik ===== */
+async function histShow(){
+  const out=$('histOut');out.textContent='Hämtar …';
+  try{
+    const j=await (await fetch('/api/prishistorik')).json();if(j.fel)throw new Error(j.fel);
+    const ser=(j.serier||[]).filter(s=>s.punkter.length).map(s=>{const a=s.punkter,f=a[0],l=a[a.length-1];return {s,f,l,pct:(l[1]-f[1])/f[1]*100};}).sort((x,y)=>Math.abs(y.pct)-Math.abs(x.pct));
+    if(!ser.length){out.innerHTML='<p class="note">Ingen historik än. Den sparas varje gång du hämtar live-priser eller jämför butiker.</p>';return;}
+    const spark=a=>{if(a.length<2)return '';const v=a.map(x=>x[1]),mn=Math.min(...v),mx=Math.max(...v),w=70,h=18;
+      return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true"><polyline fill="none" stroke="currentColor" stroke-width="1.5" points="'+v.map((y,i)=>(i/(v.length-1)*w).toFixed(1)+','+(mx===mn?h/2:(h-2-(y-mn)/(mx-mn)*(h-4))).toFixed(1)).join(' ')+'"/></svg>';};
+    const d=t=>new Date(t).toLocaleDateString('sv-SE');
+    out.innerHTML='<div class="scroll"><table><thead><tr><th>Material</th><th>Butik</th><th style="text-align:right">Först</th><th style="text-align:right">Senast</th><th style="text-align:right">Ändring</th><th></th></tr></thead><tbody>'
+      +ser.map(x=>'<tr><td>'+esc(x.s.namn)+'</td><td>'+esc(x.s.butik)+'</td><td class="n">'+nf(x.f[1],2)+'<small>'+d(x.f[0])+'</small></td><td class="n">'+nf(x.l[1],2)+'<small>'+d(x.l[0])+'</small></td><td class="n" style="color:'+(x.pct>0.5?'#b3261e':x.pct<-0.5?'#1b7a3a':'inherit')+'">'+(x.pct>0?'+':'')+nf(x.pct,1)+' %</td><td>'+spark(x.s.punkter)+'</td></tr>').join('')+'</tbody></table></div>';
+  }catch(e){out.textContent='Kunde inte hämta historiken: '+e.message+(/Failed to fetch/.test(e.message)?' (servern behövs)':'');}
+}
+(function(){
+  const mk=(id,title,inner)=>{const d=document.createElement('details');d.className='dd';d.innerHTML='<summary>'+title+'</summary>'+inner;return d;};
+  const a=mk('','Mina priser (per butik)','<div id="pbBox"></div>'),h=mk('','Prishistorik','<div class="tools" style="margin:6px 0"><button type="button" id="histBtn">Visa prishistorik</button></div><div id="histOut"></div>');
+  $('catBox').closest('details').after(h);$('catBox').closest('details').after(a);
+  $('histBtn').onclick=histShow;renderPB();
+})();
