@@ -145,3 +145,13 @@ Butikernas sidor ser olika ut och kan ändras, så träffarna är bäst-möjligt
 ## Admin: live-priser
 
 Bara administratören ser vilka material som har live-pris. På `admin.html` finns fliken **Live-priser** med alla material och butiker, status (*Live-pris*, *Hittades inte*, *Ingen live-koppling*, *Eget pris*), senaste pris, förändring och en liten kurva. Du kan filtrera på status och butik. Listan fylls på varje gång någon hämtar live-priser eller jämför butiker. Panelen *Prishistorik* i appen och själva uppgifterna (`/api/prishistorik`) är nu bara tillgängliga för admin.
+
+## Dra i handtag för att ändra storlek
+
+I 3D-modellen finns orangea handtag (kulor) som du drar i:
+- **Altan:** ena änden (startar längs väggen och förkortar/förlänger), andra änden (längd) och yttre kanten (djup).
+- **Balkong:** båda ändar (längd) och yttre kanten (djup).
+- **Garage, förråd, gäststuga och carport:** kulan på kortsidan ändrar längden, kulan på långsidan ändrar bredden. Byggnadens hörn ligger kvar även om den är roterad.
+- **Vingar (L-, T-, X- och U-form):** kulorna ändrar vingens längd och bredd.
+
+Måtten (i rutorna för Längd, Djup och så vidare) följer med, och värdet visas medan du drar. Rotation i 3D är avstängd på mobil, så handtagen används på dator eller surfplatta med "Rotera 3D" påslaget.

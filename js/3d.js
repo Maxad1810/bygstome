@@ -1,6 +1,6 @@
 /* ---------- 3D ---------- */
 const isSimple=()=>!!($('s3')&&$('s3').checked);
-let R3=null,F3=false,M=null,inst=[],uid=0,drag=null,dragW=null,dragE=null,dragK=false,dragG=false,dragB=false,LOCK3=!!(window.matchMedia&&matchMedia('(max-width:700px)').matches);
+let R3=null,F3=false,M=null,inst=[],uid=0,drag=null,dragW=null,dragE=null,dragK=false,dragG=false,dragB=false,dragH=null,LASTHIT=null,LOCK3=!!(window.matchMedia&&matchMedia('(max-width:700px)').matches);
 function reconcile(ws,N){
   N=N||1;
   ops.forEach(o=>{if(!o.id)o.id=++uid;});
@@ -41,14 +41,43 @@ function bind3d(R){
   const setM=e=>{const b=cv.getBoundingClientRect();m.set(((e.clientX-b.left)/b.width)*2-1,-((e.clientY-b.top)/b.height)*2+1);rc.setFromCamera(m,R.cam);};
   const ipw=(pl,p)=>rc.ray.intersectPlane(pl,p);
   const ipl=(pl,p)=>{const ok=rc.ray.intersectPlane(pl,p),t=(g0('huR')||0)*Math.PI/180;if(ok&&t){const cx0=g0('W1')/2,cz0=g0('W2')/2,rx=p.x-cx0,rz=p.z-cz0;p.x=cx0+rx*Math.cos(t)-rz*Math.sin(t);p.z=cz0+rx*Math.sin(t)+rz*Math.cos(t);}return ok;};
-  const hit=e=>{setM(e);const h=rc.intersectObjects(R.pick||[],false).filter(x=>{for(let p=x.object;p;p=p.parent)if(!p.visible)return false;return true;});return h.length?h[0].object.userData:null;};
+  const hit=e=>{setM(e);const h=rc.intersectObjects(R.pick||[],false).filter(x=>{for(let p=x.object;p;p=p.parent)if(!p.visible)return false;return true;});const hs=h.filter(x=>x.object.userData&&x.object.userData.handle),b=hs[0]||h[0];LASTHIT=b?b.object:null;return b?b.object.userData:null;};
   cv.addEventListener('pointerdown',e=>{
     if(LOCK3)return;const u=hit(e);if(!u)return;
-    if(u.garage)dragG=true;else if(u.balc)dragB=true;else if(u.deck)dragK=true;else if(u.wing)dragW=u.wing;else if(u.el)dragE=u.el;else drag=u.ref;if(R.ctl)R.ctl.enabled=false;cv.style.cursor='grabbing';
+    if(u.handle){const wp=new THREE.Vector3();LASTHIT.getWorldPosition(wp);dragH=Object.assign({},u.handle,{y:wp.y});}else if(u.garage)dragG=true;else if(u.balc)dragB=true;else if(u.deck)dragK=true;else if(u.wing)dragW=u.wing;else if(u.el)dragE=u.el;else drag=u.ref;if(R.ctl)R.ctl.enabled=false;cv.style.cursor='grabbing';
     try{cv.setPointerCapture(e.pointerId);}catch(_){}
     e.preventDefault();build3d();
   },true);
+  const hdrag=e=>{
+    const h=dragH,G=R.geo,p=new THREE.Vector3();setM(e);
+    if(!(h.t==='gar'?ipw:ipl)(new THREE.Plane(new THREE.Vector3(0,1,0),-h.y),p))return;
+    let lx,lz;
+    if(h.t==='deck'||h.t==='balc'){if(!G)return;const s0=G.ps[h.sd],dr=G.dirs[h.sd],dx=p.x-s0[0],dz=p.z-s0[1];lx=dx*dr[0]+dz*dr[1];lz=dz*dr[0]-dx*dr[1];}
+    else{const dx=p.x-h.ox,dz=p.z-h.oz,c=Math.cos(h.th),s=Math.sin(h.th);lx=dx*c-dz*s;lz=dx*s+dz*c;}
+    if(!h.b){h.b={lx,lz,v:{dkL:g0('dkL'),dkX:g0('dkX'),dkD:g0('dkD'),bkX:g0('bkX'),bkL:g0('bkL'),bkD:g0('bkD'),gaL:g0('gaL'),gaB:g0('gaB'),GL:g0('GL'),GB:g0('GB')}};return;}
+    const v=h.b.v,ax=lx-h.b.lx,az=lz-h.b.lz,r1=n=>Math.round(n*10)/10,r2=n=>Math.round(n*20)/20,f=n=>nf(n,1).replace(/ /g,' ')+' m';
+    let tip='';
+    if(h.t==='deck'){
+      if(h.k==='e'){const L=Math.min(40,Math.max(.5,r1(v.dkL+ax)));$('dkL').value=String(L);tip='Altanens längd '+f(L);}
+      else if(h.k==='s'){const d=Math.min(Math.max(ax,-v.dkX),v.dkL-.5),X=Math.max(0,r2(v.dkX+d)),L=Math.max(.5,r1(v.dkL-(X-v.dkX)));$('dkX').value=String(X);$('dkL').value=String(L);tip='Altanens längd '+f(L);}
+      else{const D=Math.min(8,Math.max(1,r1(v.dkD-az)));$('dkD').value=String(D);tip='Altanens djup '+f(D);}
+    }else if(h.t==='balc'){
+      const wl=G.ws[h.sd];
+      if(h.k==='e'){const L=Math.min(Math.max(1,r1(v.bkL+ax)),Math.max(1,wl-g0('bkX')));$('bkL').value=String(L);tip='Balkongens längd '+f(L);}
+      else if(h.k==='s'){const X=Math.max(0,r2(v.bkX+ax)),L=Math.max(1,r1(v.bkL-(X-v.bkX)));$('bkX').value=String(X);$('bkL').value=String(L);tip='Balkongens längd '+f(L);}
+      else{const D=Math.min(4,Math.max(.8,r1(v.bkD-az)));$('bkD').value=String(D);tip='Balkongens djup '+f(D);}
+    }else if(h.t==='gar'){
+      if(h.k==='L'){const L=Math.min(30,Math.max(3,r1(v.gaL+ax)));$('gaL').value=String(L);tip='Längd '+f(L);}
+      else{const B=Math.min(20,Math.max(2.5,r1(v.gaB+az)));$('gaB').value=String(B);tip='Bredd '+f(B);}
+      const g2=garageInfo();if(g2){$('gaX').value=String(Math.round((g0('gaX')+h.ox-g2.ox)*10)/10);$('gaZ').value=String(Math.round((g0('gaZ')+h.oz-g2.oz)*10)/10);}
+    }else if(h.t==='wing'){
+      if(h.k==='L'){const L=Math.min(30,Math.max(2,r1(v.GL+ax)));$('GL').value=String(L);tip='Vingens längd '+f(L);}
+      else{const B=Math.min(20,Math.max(2,r1(v.GB+az)));$('GB').value=String(B);tip='Vingens bredd '+f(B);}
+    }
+    build3d();showTip(tip,e);
+  };
   cv.addEventListener('pointermove',e=>{
+    if(dragH){hdrag(e);return;}
     if(dragG){
       setM(e);const p=new THREE.Vector3();
       if(ipw(new THREE.Plane(new THREE.Vector3(0,1,0),0),p)){
@@ -121,7 +150,7 @@ function bind3d(R){
     });
     if(best){drag.wall=best.i;drag.c=best.t;build3d();showTip(tipText({t:o.t,w:o.w,h:o.h,c:drag.c},G.ws[best.i]),e);}
   });
-  const end=()=>{if(!drag&&!dragW&&!dragE&&!dragK&&!dragG&&!dragB)return;const hadE=!!dragE||dragK||dragG||dragB;drag=null;dragW=null;dragE=null;dragK=false;dragG=false;dragB=false;if(R.ctl)R.ctl.enabled=!LOCK3;cv.style.cursor='';hideTip();build3d();if(hadE)calc();try{histSchedule();}catch(e){}};
+  const end=()=>{if(!drag&&!dragW&&!dragE&&!dragK&&!dragG&&!dragB&&!dragH)return;const hadE=!!dragE||dragK||dragG||dragB||!!dragH;dragH=null;drag=null;dragW=null;dragE=null;dragK=false;dragG=false;dragB=false;if(R.ctl)R.ctl.enabled=!LOCK3;cv.style.cursor='';hideTip();build3d();if(hadE)calc();try{histSchedule();}catch(e){}};
   cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
 }
 const BOX=()=>window.THREE?new THREE.BoxGeometry(1,1,1):null;
@@ -161,11 +190,12 @@ function init3d(){
     if(window.ResizeObserver)new ResizeObserver(rs).observe(el);else window.addEventListener('resize',rs);
     const L=c=>new THREE.MeshLambertMaterial({color:c});
     const PO=(m,f)=>{m.polygonOffset=true;m.polygonOffsetFactor=-f;m.polygonOffsetUnits=-f;return m;};
-    M={stud:L(0xe0b36a),plate:L(0xb5803c),hdr:L(0x9a6a2e),joist:L(0xd4a45c),floor:L(0xefe1bf),roof:new THREE.MeshLambertMaterial({color:0xb8741a,transparent:true,opacity:.5,depthWrite:false}),win:new THREE.MeshLambertMaterial({color:0x7ec8e8,transparent:true,opacity:.6}),door:new THREE.MeshLambertMaterial({color:0x6b3f1d}),sel:new THREE.MeshLambertMaterial({color:0xffd24a,transparent:true,opacity:.9}),metal:PO(L(0x5f6e78),2),metal2:PO(L(0x3f4a52),3),papp:PO(L(0x22262a),1),spont:L(0xcfa768),conc:L(0x9aa3a3),falu:L(0x8a2f23),frame:L(0xf1efe8),limtra:L(0xdcb872),cond:L(0xe8742a),deck:L(0x8f7348),pick:new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})};
+    M={stud:L(0xe0b36a),plate:L(0xb5803c),hdr:L(0x9a6a2e),joist:L(0xd4a45c),floor:L(0xefe1bf),roof:new THREE.MeshLambertMaterial({color:0xb8741a,transparent:true,opacity:.5,depthWrite:false}),win:new THREE.MeshLambertMaterial({color:0x7ec8e8,transparent:true,opacity:.6}),door:new THREE.MeshLambertMaterial({color:0x6b3f1d}),sel:new THREE.MeshLambertMaterial({color:0xffd24a,transparent:true,opacity:.9}),metal:PO(L(0x5f6e78),2),metal2:PO(L(0x3f4a52),3),papp:PO(L(0x22262a),1),spont:L(0xcfa768),conc:L(0x9aa3a3),falu:L(0x8a2f23),frame:L(0xf1efe8),limtra:L(0xdcb872),cond:L(0xe8742a),deck:L(0x8f7348),pick:new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),hnd:new THREE.MeshBasicMaterial({color:0xff8a00,depthTest:false,transparent:true,opacity:.95})};
     R3={ren,sc,cam,root,ctl,draw,rs,fresh:true,box:BOX(),cyl:new THREE.CylinderGeometry(1,1,1,12),tex:{v:mkTex(true),h:mkTex(false)},pmat:{}};bind3d(R3);
   }catch(e){F3=true;$('c3d').innerHTML='<p class="note" style="padding:12px">3D-vyn stöds inte i den här webbläsaren.</p>';}
   return R3;
 }
+function mkHnd(grp,x,y,z,data){if(!R3||!R3.pick)return;const m=new THREE.Mesh(new THREE.SphereGeometry(.17,14,10),M.hnd);m.position.set(x,y,z);m.renderOrder=999;m.userData={handle:data};grp.add(m);R3.pick.push(m);}
 function mk(grp,sx,sy,sz,mat){const m=new THREE.Mesh(R3.box,mat);m.scale.set(sx,sy,sz);grp.add(m);return m;}
 function beam(grp,a,b,w,h,mat){const m=new THREE.Mesh(R3.box,mat);m.position.copy(a).add(b).multiplyScalar(.5);m.scale.set(w,h,a.distanceTo(b));grp.add(m);grp.updateWorldMatrix(true,false);m.lookAt(grp.localToWorld(b.clone()));}
 function wall3d(grp,len,st,th,os,H,d,cc,y0,gc,gv,ga){
@@ -251,6 +281,7 @@ function build3d(){
       if(w.s==='b'){wg.rotation.y=-Math.PI/2;wg.position.set(w.x0+WB,0,g('W2'));}
       else{wg.rotation.y=Math.PI/2;wg.position.set(w.x0,0,0);}
       part3d(R,{wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:(k>=Nm?WB:0),RL:WL+ext,RW:WB,rext:ext,plan:null,wref:w,noRoof:k<Nw-1,noGrund:k>0,yoff,k,N:Nw},wg);
+      if(k===0){const hd={th:wg.rotation.y,ox:wg.position.x,oz:wg.position.z};mkHnd(wg,WL,1,WB/2,Object.assign({t:'wing',k:'L'},hd));mkHnd(wg,WL/2,1,WB,Object.assign({t:'wing',k:'B'},hd));}
     }
   });
   const gi=garageInfo();
@@ -258,6 +289,7 @@ function build3d(){
     const gg=new THREE.Group();R.root.add(gg);gg.rotation.y=gi.th;gg.position.set(gi.ox,0,gi.oz);
     if(gi.type==='c')carport3d(R,gg,gi);else
     part3d(R,{wing:true,gar:true,slab:true,noGrund:true,FL:gi.L,FW:gi.B,W1:gi.L,W2:gi.B,W3:gi.L,W4:gi.B,RL:gi.L,RW:gi.B,H2:gi.H,rext:0,plan:null,gops:gi.gops,noRoof:false,k:0,N:1,yoff:0},gg);
+    mkHnd(gg,gi.L,1,gi.B/2,{t:'gar',k:'L',th:gi.th,ox:gi.ox,oz:gi.oz});mkHnd(gg,gi.L/2,1,gi.B,{t:'gar',k:'B',th:gi.th,ox:gi.ox,oz:gi.oz});
     if(!hus&&R.fresh){
       const sz=Math.max(gi.L,gi.B,6),cxg=g0('gaX')+gi.bw/2,czg=g0('gaZ')+gi.bh/2;
       R.cam.position.set(cxg+sz*.9,sz*.85,czg+sz*1.5);
@@ -431,6 +463,9 @@ function part3d(R,o,parent){
         [sx0+.05,sx1-.05].forEach(x=>beam(gk,new THREE.Vector3(x,top-.1,-dp),new THREE.Vector3(x,.1,-dp-n*run),.045,.195,M.joist));
       }
       const pb=new THREE.Mesh(R.box,M.pick);pb.scale.set(dl,.5,dp);pb.position.set(x0+dl/2,top-.25,-dp/2);pb.userData.deck=true;gk.add(pb);R.pick.push(pb);
+      if(sg.first)mkHnd(gk,x0,top+.2,-dp/2,{t:'deck',k:'s',sd});
+      if(sg.last)mkHnd(gk,x0+dl,top+.2,-dp/2,{t:'deck',k:'e',sd});
+      if(si2===big)mkHnd(gk,x0+dl/2,top+.2,-dp,{t:'deck',k:'d',sd});
       const rtp=$('dkRoof')?$('dkRoof').value:'n';
       if(rtp!=='n'){
         const rh=g0('dkRH')||2.5,yH=top+rh,sl=Math.tan(8*Math.PI/180),yAt=z=>yH+sl*z,V3=THREE.Vector3,np2=Math.max(2,Math.ceil(dl/2.8)+1);
@@ -470,6 +505,9 @@ function part3d(R,o,parent){
       [x0+.1,x0+dl-.1].forEach(x=>{mk(gk,.095,hh,.095,M.stud).position.set(x,(top-pkh-bj-yoR)/2,-dp+.1);mk(gk,.25,.1,.25,M.conc).position.set(x,-yoR+.05,-dp+.1);});
     }
     const pb=new THREE.Mesh(R.box,M.pick);pb.scale.set(dl,.5,dp);pb.position.set(x0+dl/2,top-.25,-dp/2);pb.userData.balc=true;gk.add(pb);R.pick.push(pb);
+    if(sgp===bi.segs[0])mkHnd(gk,x0,top+.2,-dp/2,{t:'balc',k:'s',sd});
+    if(sgp===bi.segs[bi.segs.length-1])mkHnd(gk,x0+dl,top+.2,-dp/2,{t:'balc',k:'e',sd});
+    if(sgp===bi.segs[0])mkHnd(gk,x0+dl/2,top+.2,-dp,{t:'balc',k:'d',sd});
     });
   }}
   if(false)ELS.filter(e=>(e.k||0)===((o&&o.k)||0)).forEach(e=>{
