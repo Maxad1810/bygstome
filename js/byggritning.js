@@ -119,7 +119,7 @@ function pdfArchBuild(){
       newPage();
       const d=pdfPlanData(k,false),ia=(ws[0]-2*tw)*(ws[1]-2*tw);
       archSheet(doc,{d,titel,datum,planLabel:maxK>1?'PLAN VÅNING '+(k+1):'PLAN',area:nf(ws[0]*ws[1]+wingA,1)+' m²',what:k===0?'PLAN/SEKTION/FASAD':'PLAN VÅN '+(k+1),
-        inner:ok&&ia>0?{x:ws[0]*.25,z:ws[1]/2,t:nf(ia,1)+' m²'}:null,sect:k===0,
+        inner:ok&&ia>0&&!IW.some(w=>(w.k||0)===k)?{x:ws[0]*.25,z:ws[1]/2,t:nf(ia,1)+' m²'}:null,sect:k===0,
         elev:k===0?{cfg:houseCfg,names:['Framsida','Höger sida','Baksida','Vänster sida']}:null,
         section:k===0?{ws1:ws[1],Htot,ridge,O:O_,tn,RW,y00,jh,tw,floors,grOn,ph:g('ph')||.4,P:P_}:null});
     }

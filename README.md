@@ -155,3 +155,6 @@ I 3D-modellen finns orangea handtag (kulor) som du drar i:
 - **Vingar (L-, T-, X- och U-form):** kulorna ändrar vingens längd och bredd.
 
 Måtten (i rutorna för Längd, Djup och så vidare) följer med, och värdet visas medan du drar. Rotation i 3D är avstängd på mobil, så handtagen används på dator eller surfplatta med "Rotera 3D" påslaget.
+
+## Innerväggar
+Under **Innerväggar** i panelen klickar du två punkter i planvyn för att lägga en vägg (fäster mot ytterväggens insida och rätas upp när det är nästan rakt). Varje vägg kan få en dörr och ett läge. Innerväggarna räknas i kalkylen (reglar, syll, gips) i stället för fältet "Innerväggar, total längd", syns i 3D, i planritningen och i Byggritning (A3). Per våning, och de kan kopieras till nästa våning. Sparas med ritningen.

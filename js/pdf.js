@@ -85,6 +85,7 @@ function pdfPlanData(k,withGarage){
     out.opens.push(pdfOpenShape(ps,i,oo,id));
   });
   out.stairs=[];
+  out.iw=IW.filter(w=>(w.k||0)===k).map(w=>({a:[w.x1,w.z1],b:[w.x2,w.z2],d:w.d?1:0,dc:w.dc}));
   pdfDecks().filter(d=>d.k===k).forEach(dk=>{
     dk.polys.forEach((pp,i)=>out.deck.push({poly:pp.poly,w:pp.w,dp:pp.dp,bal:dk.kind==='balc',label:i===dk.bigIdx?dk.label:'',roof:dk.roof||'n'}));
     if(dk.stair){
@@ -109,6 +110,7 @@ function pdfPlanData(k,withGarage){
     out.stairs.forEach(st=>{st.poly=st.poly.map(rp);st.lines=st.lines.map(l=>[rp(l[0]),rp(l[1])]);});
     out.els.forEach(e=>{const q=rp([e.x,e.z]);e.x=q[0];e.z=q[1];});
     out.ceil.forEach(e=>{const q=rp([e.x,e.z]);e.x=q[0];e.z=q[1];});
+    out.iw.forEach(w=>{w.a=rp(w.a);w.b=rp(w.b);});
     out.rotated=true;out.rotFn=rp;
   }
   const gi=withGarage&&k===0?garageInfo():null;
@@ -185,6 +187,22 @@ function pdfOpenDraw(doc,o,P,arch){
   doc.text(o.id,q[0]+o.iw[0]*4.2,q[1]-o.iw[1]*4.2+1,{align:'center'});doc.setFont('helvetica','normal');
 }
 
+/* ----- innervägg i planen ----- */
+function pdfInnerWall(doc,w,P,arch){
+  const dx=w.b[0]-w.a[0],dz=w.b[1]-w.a[1],L=Math.hypot(dx,dz);if(L<.05)return;
+  const ux=dx/L,uz=dz/L,nx=-uz*.035,nz=ux*.035;
+  const q=(s,off)=>[w.a[0]+ux*s+nx*off,w.a[1]+uz*s+nz*off];
+  const seg=(s1,s2)=>{if(s2-s1<.02)return;doc.setFillColor(arch?0:90,arch?0:90,arch?0:90);doc.setDrawColor(arch?0:30);doc.setLineWidth(.15);pdfPoly(doc,[q(s1,-1),q(s2,-1),q(s2,1),q(s1,1)],P,'FD');};
+  if(w.d){
+    const c=Math.min(Math.max(w.dc==null?L/2:w.dc,.45),L-.45);
+    seg(0,c-.4);seg(c+.4,L);
+    const A=P(w.a[0]+ux*(c-.4),w.a[1]+uz*(c-.4)),B=P(w.a[0]+ux*(c+.4),w.a[1]+uz*(c+.4)),H=[w.a[0]+ux*(c-.4),w.a[1]+uz*(c-.4)];
+    const tip=P(H[0]-uz*.8,H[1]+ux*.8);
+    doc.setDrawColor(arch?0:60);doc.setLineWidth(.2);doc.line(A[0],A[1],tip[0],tip[1]);
+    doc.setDrawColor(120);doc.setLineWidth(.12);
+    let prev=null;for(let s=0;s<=10;s++){const f=s/10*Math.PI/2,p2=P(H[0]+ux*.8*Math.cos(f)-uz*.8*Math.sin(f),H[1]+uz*.8*Math.cos(f)+ux*.8*Math.sin(f));if(prev)doc.line(prev[0],prev[1],p2[0],p2[1]);prev=p2;}
+  }else seg(0,L);
+}
 /* ----- ett planblad ----- */
 function pdfDrawPlan(doc,d,box,opt){
   const xs=[],zs=[],addp=p=>{xs.push(p[0]);zs.push(p[1]);};
@@ -213,6 +231,7 @@ function pdfDrawPlan(doc,d,box,opt){
   doc.setDrawColor(20);const wf=opt.arch?0:55;doc.setFillColor(wf,wf,wf);doc.setLineWidth(.2);
   d.walls.forEach(pl=>pdfPoly(doc,pl,P,'FD'));d.gwalls.forEach(pl=>pdfPoly(doc,pl,P,'FD'));
   if(d.groof){doc.setDrawColor(120,80,40);doc.setLineWidth(.35);doc.setLineDashPattern([3,1.5],0);pdfPoly(doc,d.groof,P,'S');doc.setLineDashPattern([],0);}
+  (d.iw||[]).forEach(w=>pdfInnerWall(doc,w,P,opt.arch));
   d.opens.forEach(o=>pdfOpenDraw(doc,o,P,opt.arch));d.gopens.forEach(o=>pdfOpenDraw(doc,o,P,opt.arch));
   if(!opt.arch)d.els.forEach(e=>{const q=P(e.x,e.z);pdfSym(doc,e,q);doc.setFontSize(5.5);doc.setTextColor(200,60,20);doc.text(e.id,q[0]+1.7,q[1]-1.4);});
   if(!opt.arch)d.ceil.forEach(e=>{const q=P(e.x,e.z);doc.setDrawColor(200,60,20);doc.setLineWidth(.3);doc.setFillColor(255,255,255);doc.circle(q[0],q[1],1.7,'FD');doc.line(q[0]-1.2,q[1]-1.2,q[0]+1.2,q[1]+1.2);doc.line(q[0]-1.2,q[1]+1.2,q[0]+1.2,q[1]-1.2);doc.setFontSize(5.5);doc.setTextColor(200,60,20);doc.text(e.id,q[0]+2.2,q[1]-1.6);});

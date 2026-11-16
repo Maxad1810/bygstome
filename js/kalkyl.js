@@ -273,12 +273,13 @@ function calc(){
         const act=WINGS.filter((w,i)=>wcount(i)>k),plan=act.length?wingPlan(L0,WB,act):null;
         opt.segs=plan?plan.flat().map(q=>q.e-q.s):null;
         ops=so.filter(o=>!o.v||o.v===k+1);
+        if(IW.length)opt.I=iwLen(k);
       }else{
         Object.assign(opt,{wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:(k>=Nm?WB:0),RL:WL,RW:WB,I:0});
         ops=[];
       }
       try{s=calcCore(opt);}finally{ops=so;}
-      if(pt.main){const er=elRows(k);if(er.length)s.push(['El invändigt',er]);}
+      if(pt.main){const nd=iwDoors(k);if(nd)s.push(['Innerdörrar',[['Innerdörr 800×2100 mm (dörrblad, karm, foder)',nf(nd)+' st','i ritade innerväggar']]]);const er=elRows(k);if(er.length)s.push(['El invändigt',er]);}
       if(!top)s=s.filter(x=>!ROOF.includes(x[0]));
       s.forEach(x=>{
         if(k>0&&x[0]==='Golv')x[0]='Mellanbjälklag';
