@@ -167,10 +167,10 @@ function pdfSym(doc,e,q){
   else if(e.t==='l'){doc.circle(q[0],q[1],1.4,'FD');doc.line(q[0]-1,q[1]-1,q[0]+1,q[1]+1);doc.line(q[0]-1,q[1]+1,q[0]+1,q[1]-1);}
   else if(e.t==='c'){doc.setFillColor(200,60,20);doc.rect(q[0]-2,q[1]-2,4,4,'F');doc.setFontSize(6);doc.setTextColor(255);doc.text('C',q[0],q[1]+.9,{align:'center'});}
 }
-function pdfOpenDraw(doc,o,P){
+function pdfOpenDraw(doc,o,P,arch){
   doc.setFillColor(255,255,255);doc.setDrawColor(20);doc.setLineWidth(.2);pdfPoly(doc,o.poly,P,'FD');
   const m1=[(o.poly[0][0]+o.poly[3][0])/2,(o.poly[0][1]+o.poly[3][1])/2],m2=[(o.poly[1][0]+o.poly[2][0])/2,(o.poly[1][1]+o.poly[2][1])/2];
-  if(o.t==='f'){const A=P(m1[0],m1[1]),B=P(m2[0],m2[1]);doc.setDrawColor(40,120,170);doc.setLineWidth(.35);doc.line(A[0],A[1],B[0],B[1]);}
+  if(o.t==='f'){const A=P(m1[0],m1[1]),B=P(m2[0],m2[1]);if(arch)doc.setDrawColor(0);else doc.setDrawColor(40,120,170);doc.setLineWidth(arch?.25:.35);doc.line(A[0],A[1],B[0],B[1]);}
   else if(o.t==='p'){const A=P(m1[0],m1[1]),B=P(m2[0],m2[1]);doc.setDrawColor(110,70,30);doc.setLineWidth(.6);doc.line(A[0],A[1],B[0],B[1]);}
   else{
     const hx=o.poly[3][0],hz=o.poly[3][1],pts=[],iw=o.iw,dr=[o.poly[1][0]-o.poly[0][0],o.poly[1][1]-o.poly[0][1]],dl=Math.hypot(dr[0],dr[1])||1,dd=[dr[0]/dl,dr[1]/dl];
@@ -178,6 +178,7 @@ function pdfOpenDraw(doc,o,P){
     doc.setDrawColor(120);doc.setLineWidth(.2);for(let s=1;s<pts.length;s++)doc.line(pts[s-1][0],pts[s-1][1],pts[s][0],pts[s][1]);
     const H0=P(hx,hz);doc.setDrawColor(20);doc.line(H0[0],H0[1],pts[10][0],pts[10][1]);
   }
+  if(arch)return;
   // nummer
   const c=[(o.poly[0][0]+o.poly[2][0])/2,(o.poly[0][1]+o.poly[2][1])/2],q=P(c[0],c[1]);
   doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(30);
@@ -209,12 +210,12 @@ function pdfDrawPlan(doc,d,box,opt){
     const c=[x.poly.reduce((a2,p)=>a2+p[0],0)/4,x.poly.reduce((a2,p)=>a2+p[1],0)/4],q=P(c[0],c[1]);
     doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(120,85,40);doc.text(pdfSan(x.label),q[0],q[1],{align:'center'});doc.setFont('helvetica','normal');doc.setTextColor(30);
   });
-  doc.setDrawColor(20);doc.setFillColor(55,55,55);doc.setLineWidth(.2);
+  doc.setDrawColor(20);const wf=opt.arch?0:55;doc.setFillColor(wf,wf,wf);doc.setLineWidth(.2);
   d.walls.forEach(pl=>pdfPoly(doc,pl,P,'FD'));d.gwalls.forEach(pl=>pdfPoly(doc,pl,P,'FD'));
   if(d.groof){doc.setDrawColor(120,80,40);doc.setLineWidth(.35);doc.setLineDashPattern([3,1.5],0);pdfPoly(doc,d.groof,P,'S');doc.setLineDashPattern([],0);}
-  d.opens.forEach(o=>pdfOpenDraw(doc,o,P));d.gopens.forEach(o=>pdfOpenDraw(doc,o,P));
-  d.els.forEach(e=>{const q=P(e.x,e.z);pdfSym(doc,e,q);doc.setFontSize(5.5);doc.setTextColor(200,60,20);doc.text(e.id,q[0]+1.7,q[1]-1.4);});
-  d.ceil.forEach(e=>{const q=P(e.x,e.z);doc.setDrawColor(200,60,20);doc.setLineWidth(.3);doc.setFillColor(255,255,255);doc.circle(q[0],q[1],1.7,'FD');doc.line(q[0]-1.2,q[1]-1.2,q[0]+1.2,q[1]+1.2);doc.line(q[0]-1.2,q[1]+1.2,q[0]+1.2,q[1]-1.2);doc.setFontSize(5.5);doc.setTextColor(200,60,20);doc.text(e.id,q[0]+2.2,q[1]-1.6);});
+  d.opens.forEach(o=>pdfOpenDraw(doc,o,P,opt.arch));d.gopens.forEach(o=>pdfOpenDraw(doc,o,P,opt.arch));
+  if(!opt.arch)d.els.forEach(e=>{const q=P(e.x,e.z);pdfSym(doc,e,q);doc.setFontSize(5.5);doc.setTextColor(200,60,20);doc.text(e.id,q[0]+1.7,q[1]-1.4);});
+  if(!opt.arch)d.ceil.forEach(e=>{const q=P(e.x,e.z);doc.setDrawColor(200,60,20);doc.setLineWidth(.3);doc.setFillColor(255,255,255);doc.circle(q[0],q[1],1.7,'FD');doc.line(q[0]-1.2,q[1]-1.2,q[0]+1.2,q[1]+1.2);doc.line(q[0]-1.2,q[1]+1.2,q[0]+1.2,q[1]-1.2);doc.setFontSize(5.5);doc.setTextColor(200,60,20);doc.text(e.id,q[0]+2.2,q[1]-1.6);});
   doc.setTextColor(30);
   // mått: öppningar + totalt per vägg
   if(opt.dims!==false){
@@ -228,7 +229,7 @@ function pdfDrawPlan(doc,d,box,opt){
       if(items.length)pdfChain(doc,P,ps,i,ws[i],pts,base,6,deckOff(i));
       pdfDim(doc,P(ps[i][0],ps[i][1]),P(ps[i][0]+PDF_DIR[i][0]*ws[i],ps[i][1]+PDF_DIR[i][1]*ws[i]),base+(items.length?7:0),PDF_M2(ws[i])+' m',7.5,deckOff(i));
       // el invändigt: avstånd från väggens start
-      const ei=d.els.filter(e=>e.wall===i);
+      const ei=opt.arch?[]:d.els.filter(e=>e.wall===i);
       if(ei.length)pdfChain(doc,P,ps,i,ws[i],[0,...ei.map(e=>e.c),ws[i]],-5,5.5);
     }
     d.wings.forEach(wg=>{
@@ -269,7 +270,7 @@ function pdfLegend(doc,lx,ly,items){
 
 /* ----- fasader ----- */
 function pdfElevCell(doc,cfg,w,cx0,cy0,cellW,cellH,sc,title){
-  const ws=cfg.ws,Htot=cfg.Htot,ridge=cfg.ridge,gy=cy0+cellH-16,x0=cx0+12+(cellW-24-ws[w]*sc)/2;
+  const ws=cfg.ws,Htot=cfg.Htot,ridge=cfg.ridge,AR=!!cfg.arch,gy=cy0+cellH-(AR?5:16),x0=cx0+(AR?3:12)+(cellW-(AR?6:24)-ws[w]*sc)/2;
   const X=x=>x0+x*sc,Y=y=>gy-y*sc;
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(30);doc.text(pdfSan(title),cx0,cy0);
   // mark
@@ -283,18 +284,18 @@ function pdfElevCell(doc,cfg,w,cx0,cy0,cellW,cellH,sc,title){
     doc.setFillColor(150,115,70);doc.setDrawColor(60);doc.setLineWidth(.2);
     const np=Math.ceil(ws[w]/3)+1;for(let i=0;i<np;i++){const x=np===1?ws[w]/2:.15+i*(ws[w]-.3)/(np-1);doc.rect(X(x-.0475),Y(Htot-.1),.095*sc,(Htot-.1)*sc,'FD');}
   }else{
-  doc.setFillColor(...hexRgb($('fc').value));doc.setDrawColor(40);doc.setLineWidth(.3);
+  doc.setFillColor(...(AR?[255,255,255]:hexRgb($('fc').value)));doc.setDrawColor(AR?0:40);doc.setLineWidth(AR?.4:.3);
   doc.rect(X(0),Y(Htot),ws[w]*sc,(Htot-yb)*sc,'FD');
   // panellinjer
-  doc.setDrawColor(...hexShade($('fc').value,.8));doc.setLineWidth(.05);
+  doc.setDrawColor(...(AR?[120,120,120]:hexShade($('fc').value,.8)));doc.setLineWidth(AR?.06:.05);
   if(cfg.panelStd){for(let x=.12;x<ws[w];x+=.12)doc.line(X(x),Y(Htot),X(x),Y(yb));}
   else{for(let y=yb+.12;y<Htot;y+=.12)doc.line(X(0),Y(y),X(ws[w]),Y(y));}
   }
   // våningsskarvar
-  cfg.floors.forEach(fy=>{doc.setDrawColor(255,255,255);doc.setLineWidth(.2);doc.line(X(0),Y(fy),X(ws[w]),Y(fy));});
+  cfg.floors.forEach(fy=>{if(AR)doc.setDrawColor(150);else doc.setDrawColor(255,255,255);doc.setLineWidth(.2);doc.line(X(0),Y(fy),X(ws[w]),Y(fy));});
   // tak
   const O=cfg.O,tn=cfg.tn;
-  doc.setDrawColor(40);doc.setFillColor(...hexRgb($('rcol').value));doc.setLineWidth(.3);
+  doc.setDrawColor(AR?0:40);doc.setFillColor(...(AR?[255,255,255]:hexRgb($('rcol').value)));doc.setLineWidth(AR?.4:.3);
   if(cfg.gable[w]){
     const half=cfg.RW/2+O,cxm=ws[w]/2;
     pdfPoly(doc,[[cxm-half,Htot-tn*O],[cxm,ridge],[cxm+half,Htot-tn*O]],(x,y)=>[X(x),Y(y)],'FD');
@@ -311,15 +312,15 @@ function pdfElevCell(doc,cfg,w,cx0,cy0,cellW,cellH,sc,title){
   cfg.ops.filter(o=>o.wall===w).forEach(o=>{
     const c=Math.min(Math.max(o.c,o.w/2),ws[w]-o.w/2),y1=cfg.yFloor(o.k)+o.sill;
     const win=o.t==='f';
-    doc.setFillColor(win?190:(o.t==='p'?210:110),win?225:(o.t==='p'?205:75),win?240:(o.t==='p'?195:35));doc.setDrawColor(245);doc.setLineWidth(.4);
+    if(AR){doc.setFillColor(255,255,255);doc.setDrawColor(0);doc.setLineWidth(.3);}else{doc.setFillColor(win?190:(o.t==='p'?210:110),win?225:(o.t==='p'?205:75),win?240:(o.t==='p'?195:35));doc.setDrawColor(245);doc.setLineWidth(.4);}
     doc.rect(X(c-o.w/2),Y(y1+o.h),o.w*sc,o.h*sc,'FD');
-    doc.setDrawColor(70);doc.setLineWidth(.12);
+    doc.setDrawColor(AR?0:70);doc.setLineWidth(AR?.2:.12);
     if(win){doc.line(X(c),Y(y1+o.h),X(c),Y(y1));doc.line(X(c-o.w/2),Y(y1+o.h/2),X(c+o.w/2),Y(y1+o.h/2));}
     else if(o.t==='p'){for(let yy=y1+.5;yy<y1+o.h-.1;yy+=.5)doc.line(X(c-o.w/2),Y(yy),X(c+o.w/2),Y(yy));}
     else{doc.setFillColor(230,200,90);doc.circle(X(c+o.w/2)-1.6,Y(y1+o.h*.45),.6,'F');}
     doc.setFontSize(5.5);doc.setFont('helvetica','bold');doc.setTextColor(30);
     const tx=X(c),ty=Y(y1+o.h)+2.6;
-    if(o.w*sc>7){doc.text(o.id,tx,ty,{align:'center'});doc.setFont('helvetica','normal');doc.text(nf(o.w,2)+'x'+nf(o.h,2),tx,ty+2.3,{align:'center'});if(o.w*sc>10)doc.text('UK '+nf(y1,2),tx,ty+4.6,{align:'center'});}
+    if(!AR&&o.w*sc>7){doc.text(o.id,tx,ty,{align:'center'});doc.setFont('helvetica','normal');doc.text(nf(o.w,2)+'x'+nf(o.h,2),tx,ty+2.3,{align:'center'});if(o.w*sc>10)doc.text('UK '+nf(y1,2),tx,ty+4.6,{align:'center'});}
     doc.setFont('helvetica','normal');
   });
   // altan och balkong (syns även från sidorna)
@@ -330,7 +331,7 @@ function pdfElevCell(doc,cfg,w,cx0,cy0,cellW,cellH,sc,title){
       const xmin=Math.min(...q.map(a2=>a2[0])),xmax=Math.max(...q.map(a2=>a2[0])),tmax=Math.max(...q.map(a2=>a2[1]));
       const front=tmax>.05,segsX=(front?[[xmin,xmax]]:[[xmin,Math.min(xmax,0)],[Math.max(xmin,ws[w]),xmax]]).filter(sx=>sx[1]-sx[0]>.05);
       segsX.forEach(([xmin,xmax])=>{
-      doc.setFillColor(143,115,72);doc.setDrawColor(60);doc.setLineWidth(.25);
+      if(AR)doc.setFillColor(255,255,255);else doc.setFillColor(143,115,72);doc.setDrawColor(AR?0:60);doc.setLineWidth(.25);
       doc.rect(X(xmin),Y(dk.top),(xmax-xmin)*sc,dk.thick*sc,'FD');
       doc.setDrawColor(90);doc.setLineWidth(.3);
       if(dk.posts){[xmin+.1,xmax-.1].forEach(x=>doc.line(X(x),Y(dk.top-dk.thick),X(x),Y(0)));}
@@ -356,8 +357,9 @@ function pdfElevCell(doc,cfg,w,cx0,cy0,cellW,cellH,sc,title){
       for(let i=0;i<n;i++)doc.rect(X(cx-.5),Y(dk.top-i*rs),1.0*sc,rs*sc,'FD');
     }
     // etikett
-    if(dk.polys.some(pp=>pp.w===w)){doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(110,80,40);doc.text(pdfSan(dk.kind==='balc'?'Balkong':'Altan'),X(dk.polys.find(pp=>pp.w===w).poly.reduce((a2,p)=>a2+((p[0]-cfg.ps[w][0])*PDF_DIR[w][0]+(p[1]-cfg.ps[w][1])*PDF_DIR[w][1]),0)/4),Y(dk.top)-1.2,{align:'center'});doc.setFont('helvetica','normal');doc.setTextColor(30);}
+    if(!AR&&dk.polys.some(pp=>pp.w===w)){doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(110,80,40);doc.text(pdfSan(dk.kind==='balc'?'Balkong':'Altan'),X(dk.polys.find(pp=>pp.w===w).poly.reduce((a2,p)=>a2+((p[0]-cfg.ps[w][0])*PDF_DIR[w][0]+(p[1]-cfg.ps[w][1])*PDF_DIR[w][1]),0)/4),Y(dk.top)-1.2,{align:'center'});doc.setFont('helvetica','normal');doc.setTextColor(30);}
   });
+  if(AR)return;
   // måttkedja nedtill: öppningar + totalt
   const items=cfg.ops.filter(o=>o.wall===w),pts=[0,ws[w]];items.forEach(o=>{pts.push(o.c-o.w/2,o.c+o.w/2);});
   const a=[...new Set(pts.map(v=>+Math.min(Math.max(v,0),ws[w]).toFixed(3)))].sort((p,q)=>p-q);
