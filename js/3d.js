@@ -54,7 +54,7 @@ function bind3d(R){
     let lx,lz;
     if(h.t==='deck'||h.t==='balc'){if(!G)return;const s0=G.ps[h.sd],dr=G.dirs[h.sd],dx=p.x-s0[0],dz=p.z-s0[1];lx=dx*dr[0]+dz*dr[1];lz=dz*dr[0]-dx*dr[1];}
     else{const dx=p.x-h.ox,dz=p.z-h.oz,c=Math.cos(h.th),s=Math.sin(h.th);lx=dx*c-dz*s;lz=dx*s+dz*c;}
-    if(!h.b){h.b={lx,lz,v:{dkL:g0('dkL'),dkX:g0('dkX'),dkD:g0('dkD'),bkX:g0('bkX'),bkL:g0('bkL'),bkD:g0('bkD'),gaL:g0('gaL'),gaB:g0('gaB'),GL:g0('GL'),GB:g0('GB')}};return;}
+    if(!h.b){h.b={lx,lz,v:{dkL:g0('dkL'),dkX:g0('dkX'),dkD:g0('dkD'),bkX:g0('bkX'),bkL:g0('bkL'),bkD:g0('bkD'),gaL:g0('gaL'),gaB:g0('gaB'),GL:g0('GL'),GB:g0('GB'),rx:window.WEXT||0}};return;}
     const v=h.b.v,ax=lx-h.b.lx,az=lz-h.b.lz,r1=n=>Math.round(n*10)/10,r2=n=>Math.round(n*20)/20,f=n=>nf(n,1).replace(/ /g,' ')+' m';
     let tip='';
     if(h.t==='deck'){
@@ -71,7 +71,8 @@ function bind3d(R){
       else{const B=Math.min(20,Math.max(2.5,r1(v.gaB+az)));$('gaB').value=String(B);tip='Bredd '+f(B);}
       const g2=garageInfo();if(g2){$('gaX').value=String(Math.round((g0('gaX')+h.ox-g2.ox)*10)/10);$('gaZ').value=String(Math.round((g0('gaZ')+h.oz-g2.oz)*10)/10);}
     }else if(h.t==='wing'){
-      if(h.k==='L'){const L=Math.min(30,Math.max(2,r1(v.GL+ax)));$('GL').value=String(L);tip='Vingens längd '+f(L);}
+      if(h.k==='R'){const X=Math.min(12,Math.max(0,r1(v.rx-ax)));$('wRx').value=String(X);tip='Vingtaket sticker in '+f(X)+' i huvudtaket';}
+      else if(h.k==='L'){const L=Math.min(30,Math.max(2,r1(v.GL+ax)));$('GL').value=String(L);tip='Vingens längd '+f(L);}
       else{const B=Math.min(20,Math.max(2,r1(v.GB+az)));$('GB').value=String(B);tip='Vingens bredd '+f(B);}
     }
     build3d();showTip(tip,e);
@@ -272,7 +273,7 @@ function build3d(){
     part3d(R,{plan,noRoof:k<Nm-1,noGrund:k>0,yoff,k,N:Nm},sg);
     if(R.geo){if(k===0)R.geo.yo=[];R.geo.yo[k]=yoff;}
   }
-  const ext0=Math.max(0,Math.min(WB/2+.5,g('RW')/2-.1));
+  const wRxV=($('wRx')&&$('wRx').value.trim()),ext0=wRxV?Math.max(0,Math.min(parseFloat(wRxV)||0,12)):Math.max(0,Math.min(WB/2+.5,g('RW')/2-.1));window.WEXT=ext0;
   (hus?WINGS:[]).forEach((w,i)=>{
     const Nw=wcount(i),ext=Nw===Nm?ext0:0;
     for(let k=0;k<Nw;k++){
@@ -281,7 +282,7 @@ function build3d(){
       if(w.s==='b'){wg.rotation.y=-Math.PI/2;wg.position.set(w.x0+WB,0,g('W2'));}
       else{wg.rotation.y=Math.PI/2;wg.position.set(w.x0,0,0);}
       part3d(R,{wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:(k>=Nm?WB:0),RL:WL+ext,RW:WB,rext:ext,plan:null,wref:w,noRoof:k<Nw-1,noGrund:k>0,yoff,k,N:Nw},wg);
-      if(k===0){const hd={th:wg.rotation.y,ox:wg.position.x,oz:wg.position.z};mkHnd(wg,WL,1,WB/2,Object.assign({t:'wing',k:'L'},hd));mkHnd(wg,WL/2,1,WB,Object.assign({t:'wing',k:'B'},hd));}
+      if(k===0){const hd={th:wg.rotation.y,ox:wg.position.x,oz:wg.position.z};mkHnd(wg,WL,1,WB/2,Object.assign({t:'wing',k:'L'},hd));mkHnd(wg,WL/2,1,WB,Object.assign({t:'wing',k:'B'},hd));if(ext>0||wRxV)mkHnd(wg,-ext,H+.35,WB/2,Object.assign({t:'wing',k:'R'},hd));}
     }
   });
   const gi=garageInfo();
