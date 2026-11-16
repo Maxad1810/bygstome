@@ -173,7 +173,7 @@ function pdfOpenDraw(doc,o,P,arch){
   if(o.t==='f'){const A=P(m1[0],m1[1]),B=P(m2[0],m2[1]);if(arch)doc.setDrawColor(0);else doc.setDrawColor(40,120,170);doc.setLineWidth(arch?.25:.35);doc.line(A[0],A[1],B[0],B[1]);}
   else if(o.t==='p'){const A=P(m1[0],m1[1]),B=P(m2[0],m2[1]);doc.setDrawColor(110,70,30);doc.setLineWidth(.6);doc.line(A[0],A[1],B[0],B[1]);}
   else{
-    const hx=o.poly[3][0],hz=o.poly[3][1],pts=[],iw=o.iw,dr=[o.poly[1][0]-o.poly[0][0],o.poly[1][1]-o.poly[0][1]],dl=Math.hypot(dr[0],dr[1])||1,dd=[dr[0]/dl,dr[1]/dl];
+    const hx=o.poly[0][0],hz=o.poly[0][1],pts=[],iw=[-o.iw[0],-o.iw[1]],dr=[o.poly[1][0]-o.poly[0][0],o.poly[1][1]-o.poly[0][1]],dl=Math.hypot(dr[0],dr[1])||1,dd=[dr[0]/dl,dr[1]/dl];
     for(let s=0;s<=10;s++){const f=s/10*Math.PI/2;pts.push(P(hx+dd[0]*o.w*Math.cos(f)+iw[0]*o.w*Math.sin(f),hz+dd[1]*o.w*Math.cos(f)+iw[1]*o.w*Math.sin(f)));}
     doc.setDrawColor(120);doc.setLineWidth(.2);for(let s=1;s<pts.length;s++)doc.line(pts[s-1][0],pts[s-1][1],pts[s][0],pts[s][1]);
     const H0=P(hx,hz);doc.setDrawColor(20);doc.line(H0[0],H0[1],pts[10][0],pts[10][1]);
