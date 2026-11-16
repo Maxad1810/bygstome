@@ -568,10 +568,12 @@ function part3d(R,o,parent){
         beam(gD,px(atf(Ef,.045),x1),px(atf(Rf,.045),x1),.022,.145,M.joist);
         beam(gD,px(atf(Ef,.03),x2),px(atf(Rf,.03),x2),.006,.17,M.metal2);
       });
-      const cand=[];
-      segs.forEach(sg=>{
+      const cand=[],sgs=[];
+      segs.forEach(sg=>{if(isW&&!(o&&o.gar)&&sg.b<=.001&&sg.b-sg.a>.3){const n=Math.ceil((sg.b-sg.a)/.3),w2=(sg.b-sg.a)/n;for(let i=0;i<n;i++)sgs.push({a:sg.a+i*w2,b:sg.a+(i+1)*w2,ov:0});}else sgs.push(sg);});
+      sgs.forEach(sg=>{
         const xc=(sg.a+sg.b)/2,len=sg.b-sg.a,Os=sg.ov;
-        const E=new V(xc,base-tn*Os,cz+s*(RW/2+Os)),Rg=new V(xc,base+tn*RW/2,cz);
+        let E=new V(xc,base-tn*Os,cz+s*(RW/2+Os));const Rg=new V(xc,base+tn*RW/2,cz);
+        if(isW&&!(o&&o.gar)&&sg.b<=.001){const f=Math.max(0,1-2*Math.abs(xc)/RW);if(f<=.03)return;E=new V(xc,base+tn*(RW/2)*(1-f),cz+s*RW/2*f);}   // vingtaket i huvudtakets vind: bara ner till skärningen mot huvudtaket
         const at=(p,off)=>p===Rg?new V(xc,Rg.y+(off+rof)/co,cz):p.clone().addScaledVector(nv,off+rof);
         beam(gR,at(E,.0835),at(Rg,.0835),len,.022,M.spont);
         beam(gP,at(E,.0965),at(Rg,.0965),len,.004,M.papp);
