@@ -273,7 +273,7 @@ function build3d(){
     part3d(R,{plan,noRoof:k<Nm-1,noGrund:k>0,yoff,k,N:Nm},sg);
     if(R.geo){if(k===0)R.geo.yo=[];R.geo.yo[k]=yoff;}
   }
-  const wRxV=($('wRx')&&$('wRx').value.trim()),ext0=wRxV?Math.max(0,Math.min(parseFloat(wRxV)||0,12)):Math.max(0,Math.min(WB/2+.5,g('RW')/2-.1));window.WEXT=ext0;
+  const wRxV=($('wRx')&&$('wRx').value.trim()),ext0=wRxV?Math.max(0,Math.min(parseFloat(wRxV)||0,12)):Math.max(0,Math.min(WB/2,g('RW')/2-.1));window.WEXT=ext0;
   (hus?WINGS:[]).forEach((w,i)=>{
     const Nw=wcount(i),ext=Nw===Nm?ext0:0;
     for(let k=0;k<Nw;k++){
@@ -282,7 +282,7 @@ function build3d(){
       if(w.s==='b'){wg.rotation.y=-Math.PI/2;wg.position.set(w.x0+WB,0,g('W2'));}
       else{wg.rotation.y=Math.PI/2;wg.position.set(w.x0,0,0);}
       part3d(R,{wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:(k>=Nm?WB:0),RL:WL+ext,RW:WB,rext:ext,plan:null,wref:w,noRoof:k<Nw-1,noGrund:k>0,yoff,k,N:Nw},wg);
-      if(k===0){const hd={th:wg.rotation.y,ox:wg.position.x,oz:wg.position.z};mkHnd(wg,WL,1,WB/2,Object.assign({t:'wing',k:'L'},hd));mkHnd(wg,WL/2,1,WB,Object.assign({t:'wing',k:'B'},hd));if(ext>0||wRxV)mkHnd(wg,-ext,H+.35,WB/2,Object.assign({t:'wing',k:'R'},hd));}
+      if(k===0){const hd={th:wg.rotation.y,ox:wg.position.x,oz:wg.position.z};mkHnd(wg,WL,1,WB/2,Object.assign({t:'wing',k:'L'},hd));mkHnd(wg,WL/2,1,WB,Object.assign({t:'wing',k:'B'},hd));if(ext>0||wRxV)mkHnd(wg,-ext,y00+H+Math.tan(g('P')*Math.PI/180)*WB/2,WB/2,Object.assign({t:'wing',k:'R'},hd));}
     }
   });
   const gi=garageInfo();
