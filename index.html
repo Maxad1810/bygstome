@@ -22,6 +22,7 @@
 <label class="chk"><input type="checkbox" id="gaOn"> Fristående byggnad (garage, förråd, gäststuga eller carport)</label>
 <label class="chk"><input type="checkbox" id="dk"> Altan (kräver hus)</label>
 <label class="chk"><input type="checkbox" id="bk"> Balkong (kräver hus)</label>
+<label class="chk"><input type="checkbox" id="cp"> Carport vid huset (kräver hus)</label>
 <p class="note" style="margin:4px 0 0">Bara det du väljer visas, beräknas, ritas i 3D och tas med i PDF-ritningen och inköpslistan.</p>
 </fieldset>
 <fieldset><legend>Ritningar</legend>
@@ -154,6 +155,17 @@
 <label class="chk"><input type="checkbox" id="bkP" checked> Stödstolpar till marken</label>
 <p class="note" style="margin:4px 0 0">Balkongen sitter i våningsbjälklaget på vald våning. Dra den i 3D för att flytta den längs väggen eller till en annan vägg. Har huset färre våningar än du valt, hamnar den på översta våningen.</p>
 </fieldset>
+<fieldset data-need="cp"><legend>Carport vid huset</legend>
+<div class="row">
+<label>Vägg<select id="cpS"><option value="0">Framsida (vägg 1)</option><option value="1">Höger (vägg 2)</option><option value="2">Baksida (vägg 3)</option><option value="3">Vänster (vägg 4)</option></select></label>
+<label>Start längs väggen (m)<input id="cpX" type="number" step="0.1" min="0" value="0"></label>
+<label>Längd (m)<input id="cpL" type="number" step="0.1" min="2" value="6"></label>
+<label>Djup ut från väggen (m)<input id="cpD" type="number" step="0.1" min="2" value="3"></label>
+<label>Höjd yttre kant (m)<input id="cpH" type="number" step="0.1" min="2" value="2.4"></label>
+</div>
+<label class="chk"><input type="checkbox" id="cpCar" checked> Visa en bil under carporten</label>
+<p class="note" style="margin:4px 0 0">Pulpettak (8°) som lutar bort från huset, med ledger mot väggen och stolpar längs ytterkanten.</p>
+</fieldset>
 <fieldset data-need="ga"><legend>Fristående byggnad</legend>
 <label>Typ<select id="gaT"><option value="g" selected>Garage</option><option value="f">Förråd / friggebod</option><option value="s">Gäststuga</option><option value="c">Carport (tak på stolpar)</option></select></label>
 <div class="row">
@@ -171,6 +183,18 @@
 <button type="button" id="gaAdd">+ Lägg till fönster, dörr eller port</button>
 <label class="chk" style="margin-top:8px"><input type="checkbox" id="gaI"> Isolerat och inklätt (gips)</label>
 <label class="chk"><input type="checkbox" id="gaCar" checked> Visa en bil i garaget (för måttsättning)</label>
+<label class="chk" style="margin-top:8px"><input type="checkbox" id="gcOn"> Lägg till carport vid byggnaden</label>
+<div id="gcBox" style="display:none">
+<div class="row">
+<label>Vägg<select id="gcS"><option value="0">Långsida framför (vägg 1)</option><option value="1">Kortsida höger (vägg 2)</option><option value="2">Långsida bak (vägg 3)</option><option value="3">Kortsida vänster (vägg 4)</option></select></label>
+<label>Start längs väggen (m)<input id="gcX" type="number" step="0.1" min="0" value="0"></label>
+<label>Längd (m)<input id="gcL" type="number" step="0.1" min="2" value="6"></label>
+<label>Djup ut från väggen (m)<input id="gcD" type="number" step="0.1" min="2" value="3"></label>
+<label>Höjd yttre kant (m)<input id="gcH" type="number" step="0.1" min="2" value="2.4"></label>
+</div>
+<label class="chk"><input type="checkbox" id="gcCar" checked> Visa en bil under carporten</label>
+</div>
+
 <div class="tools" style="margin:6px 0"><button type="button" id="rotG">Rotera garaget 45°</button></div>
 <p class="note" style="margin:4px 0 0">Dra garaget i 3D för att flytta det på tomten. Dra port, dörr och fönster för att flytta dem – måtten visas medan du drar. Platta på mark och sadeltak med samma takvinkel som huset.</p>
 </fieldset>

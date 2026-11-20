@@ -285,12 +285,14 @@ function build3d(){
       if(k===0){const hd={th:wg.rotation.y,ox:wg.position.x,oz:wg.position.z};mkHnd(wg,WL,1,WB/2,Object.assign({t:'wing',k:'L'},hd));mkHnd(wg,WL/2,1,WB,Object.assign({t:'wing',k:'B'},hd));if(ext>0||wRxV)mkHnd(wg,-ext,y00+H+Math.tan(g('P')*Math.PI/180)*WB/2,WB/2,Object.assign({t:'wing',k:'R'},hd));}
     }
   });
+  capInfos().filter(c=>c.host==='h').forEach(c=>cap3d(R,hin,c));
   const gi=garageInfo();
   if(gi){
     const gg=new THREE.Group();R.root.add(gg);gg.rotation.y=gi.th;gg.position.set(gi.ox,0,gi.oz);
     if(gi.type==='c')carport3d(R,gg,gi);else
     part3d(R,{wing:true,gar:true,slab:true,noGrund:true,FL:gi.L,FW:gi.B,W1:gi.L,W2:gi.B,W3:gi.L,W4:gi.B,RL:gi.L,RW:gi.B,H2:gi.H,rext:0,plan:null,gops:gi.gops,noRoof:false,k:0,N:1,yoff:0},gg);
     mkHnd(gg,gi.L,1,gi.B/2,{t:'gar',k:'L',th:gi.th,ox:gi.ox,oz:gi.oz});mkHnd(gg,gi.L/2,1,gi.B,{t:'gar',k:'B',th:gi.th,ox:gi.ox,oz:gi.oz});
+    capInfos().filter(c=>c.host==='g').forEach(c=>cap3d(R,gg,c));
     if(!hus&&R.fresh){
       const sz=Math.max(gi.L,gi.B,6),cxg=g0('gaX')+gi.bw/2,czg=g0('gaZ')+gi.bh/2;
       R.cam.position.set(cxg+sz*.9,sz*.85,czg+sz*1.5);
@@ -705,6 +707,26 @@ function car3d(parent,L,B,y0){
   bx(cl*.08,.03,cw*.85,body,cl*.2,.2+.5*k+.1+.46*k-.12,0);
   [-1,1].forEach(sz=>{bx(.12,.12,.28,lamp,cl/2,.2+.42*k,sz*cw*.32);bx(.1,.12,.28,red,-cl/2,.2+.42*k,sz*cw*.32);});
   [[.32,1],[.32,-1],[-.32,1],[-.32,-1]].forEach(([fx,sz])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(.32,.32,.22,18),dark);w.rotation.x=Math.PI/2;w.position.set(fx*cl,.32,sz*(cw/2-.06));g.add(w);});
+}
+function capFrame(c){
+  let ps;
+  if(c.host==='g'){const gi=garageInfo();ps=[[0,0],[gi.L,0],[gi.L,gi.B],[0,gi.B]];}
+  else ps=[[0,0],[g0('W1'),0],[g0('W1'),g0('W2')],[g0('W1')-g0('W3'),g0('W2')]];
+  return {p:ps[c.w],th:[0,-Math.PI/2,Math.PI,Math.PI/2][c.w]};
+}
+function cap3d(R,parent,c){
+  const f=capFrame(c),g=new THREE.Group();g.position.set(f.p[0],0,f.p[1]);g.rotation.y=f.th;parent.add(g);
+  const L=c.L,D=c.D,H=c.H,x0=c.x0,tn=Math.tan(8*Math.PI/180),rise=tn*D,V3=THREE.Vector3,zo=-D;
+  const mkx=(sx,sy,sz,mat,x,y,z)=>{const m=new THREE.Mesh(R3.box,mat);m.scale.set(sx,sy,sz);m.position.set(x,y,z);g.add(m);return m;};
+  mkx(L+.2,.1,D,M.conc,x0+L/2,.05,-D/2);
+  const n=Math.ceil(L/3)+1;
+  for(let i=0;i<n;i++)mkx(.095,H,.095,M.stud,x0+.1+i*(L-.2)/(n-1),.1+H/2,zo+.1);
+  mkx(L,.195,.09,M.joist,x0+L/2,.1+H-.0975,zo+.1);
+  const yH=zz=>.1+H+rise*(1+zz/D)+.1-.0;      // höjd på takets ovansida vid z
+  mkx(L,.195,.09,M.joist,x0+L/2,.1+H+rise-.0975,-.045);
+  for(let x=x0+.05;x<=x0+L-.04;x+=.9)beam(g,new V3(x,yH(0),0),new V3(x,yH(-D-.2),-D-.2),.045,.145,M.joist);
+  beam(g,new V3(x0+L/2,yH(0)+.1,0),new V3(x0+L/2,yH(-D-.2)+.1,-D-.2),L+.4,.02,M.metal);
+  if(c.car){const cg=new THREE.Group();cg.position.set(x0,0,-D);g.add(cg);car3d(cg,L,D,.1);}
 }
 function carport3d(R,gg,gi){
   const g=new THREE.Group();gg.add(g);

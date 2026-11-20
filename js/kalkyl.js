@@ -21,6 +21,7 @@ function syncBuild(){
   const hus=$('bHus').checked,ga=$('gaOn').checked;
   if(!hus&&$('dk').checked)$('dk').checked=false;
   if(!hus&&$('bk').checked)$('bk').checked=false;
+  if(!hus&&$('cp').checked)$('cp').checked=false;$('cp').disabled=!hus;
   $('dk').disabled=!hus;$('bk').disabled=!hus;
   if(hus&&$('bk').checked){
     const kv=Math.max(1,Math.min(parseInt($('bkV').value)||2,mcount()));
@@ -30,8 +31,9 @@ function syncBuild(){
   }else if(ops.some(o=>o.bd)){ops=ops.filter(o=>!o.bd);drawOps();}
   document.querySelectorAll('fieldset[data-need]').forEach(f=>{
     const n=f.dataset.need;
-    const show=n==='hus'?hus:(n==='any'?(hus||ga):(n==='dk'?(hus&&$('dk').checked):(n==='bk'?(hus&&$('bk').checked):(n==='ga'?ga:true))));
+    const show=n==='hus'?hus:(n==='any'?(hus||ga):(n==='dk'?(hus&&$('dk').checked):(n==='bk'?(hus&&$('bk').checked):(n==='cp'?(hus&&$('cp').checked):(n==='ga'?ga:true)))));
     f.style.display=show?'':'none';
+    if(n==='ga'&&$('gcBox'))$('gcBox').style.display=($('gcOn').checked&&$('gaT').value!=='c')?'':'none';
   });
 }
 function sync(){
@@ -129,6 +131,39 @@ function carportRows(gi){
     ['Stupr\u00f6r (carport)','2 st','\u00e0 3 m'],
     ['Dr\u00e4nerande makadam 0-32 mm (carport)',nf(A*.15*1.15,1)+' m\u00b3','150 mm under taket']
   ]]];
+}
+function capInfos(){
+  const out=[];
+  const mk=(host,pre,wl,label)=>{
+    const w=Math.min(3,Math.max(0,parseInt($(pre+'S').value)||0)),wlen=wl[w]||0;if(wlen<1)return;
+    const L=Math.max(2,Math.min(g0(pre+'L'),wlen)),x0=Math.min(Math.max(g0(pre+'X'),0),Math.max(0,wlen-L));
+    out.push({host,w,L,x0,D:Math.max(2,g0(pre+'D')),H:Math.max(2,g0(pre+'H')),car:$(pre+'Car').checked,label});
+  };
+  if($('bHus').checked&&$('cp')&&$('cp').checked)mk('h','cp',[g0('W1'),g0('W2'),g0('W3'),g0('W4')],'Carport vid huset');
+  const gi=garageInfo();
+  if(gi&&gi.type!=='c'&&$('gcOn')&&$('gcOn').checked)mk('g','gc',[gi.L,gi.B,gi.L,gi.B],'Carport vid garaget');
+  return out;
+}
+function capRows(c){
+  const L=c.L,D=c.D,H=c.H,A=L*D,sp=1+g0('S')/100,pc=Math.ceil,tn=Math.tan(8*Math.PI/180),rise=tn*D;
+  const nP=pc(L/3)+1,slope=Math.hypot(D+.4,rise),roofA=(L+.4)*slope,rafN=pc(L/.9)+1;
+  return [c.label,[
+    ['Stolpar 95x95 (carport)',nf(nP)+' st','l\u00e4ngd '+nf(H+.3,1)+' m \u00b7 l\u00e4ngs ytterkanten'],
+    ['Plintar (carport)',nf(nP)+' st','under varje stolpe'],
+    ['B\u00e4rbalk 2\u00d745x195 (carport)',nf(pc(2*L*sp/4.8)*2)+' st','\u00e0 4,8 m \u00b7 '+nf(2*L,1)+' m, dubbla'],
+    ['Ledger 45x195 mot v\u00e4gg (carport)',nf(pc(L*sp/4.8))+' st','\u00e0 4,8 m \u00b7 '+nf(L,1)+' m'],
+    ['Ankarbult (carport)',nf(pc(L/.6)+1)+' st','ledger mot v\u00e4gg c/c 600'],
+    ['Takbj\u00e4lkar 45x145 (carport)',nf(pc(rafN*sp))+' st','l\u00e4ngd '+nf(D+.4,1)+' m \u00b7 c/c 900 mm'],
+    ['Takstolsbeslag (carport)',nf(rafN*2)+' st','2 per bj\u00e4lke'],
+    ['Underlagstak/r\u00e5spont (carport)',nf(roofA*sp,1)+' m\u00b2','med spill'],
+    ['Underlagspapp (carport)',nf(pc(roofA*1.1*sp/15))+' rullar','\u00e0 15 m\u00b2'],
+    ['Takpl\u00e5t (carport)',nf(roofA*1.05,1)+' m\u00b2','t\u00e4ckt yta + 5 %'],
+    ['Takfotspl\u00e5t (carport)',nf(pc(L*sp/2))+' st','\u00e0 2 m'],
+    ['Vindskivepl\u00e5t (carport)',nf(pc(2*slope*sp/2))+' st','\u00e0 2 m'],
+    ['H\u00e4ngr\u00e4nnor (carport)',nf(pc(L*sp/3))+' st','\u00e0 3 m'],
+    ['Stupr\u00f6r (carport)','1 st','\u00e0 3 m'],
+    ['Dr\u00e4nerande makadam 0-32 mm (carport)',nf(A*.15*1.15,1)+' m\u00b3','150 mm under taket']
+  ]];
 }
 function garageRows(){
   const gi=garageInfo();if(!gi)return [];
@@ -292,6 +327,7 @@ function calc(){
   const brr=hus?balcRows():null;if(brr)all.push(['Balkong',brr]);
   {const bs=parseInt($('hBS').value)||0;if(hus&&Nm>1&&bs>0)all.push(['Stöd under mellanbjälklag',[['Limträbalk 115x315 (bjälklagsstöd)',nf(bs*(Nm-1))+' st','längd '+nf(g('FL'),1)+' m · en per stödlinje och våning']]]);}
   garageRows().forEach(x=>all.push(x));
+  capInfos().forEach(c=>all.push(capRows(c)));
   const shn={r:'',l:'L-form',t:'T-form',x:'X-form',u:'U-form'}[$('hs').value];
   TITLE='Stomkalkyl – hus '+nf(g('L'),1)+'×'+nf(g('W'),1)+' m'+(shn?' ('+shn+', vinge '+nf(WL,1)+'×'+nf(WB,1)+' m)':'')+(Nm>1?', '+Nm+' våningar (huvudhus)':'');
   if(!hus)TITLE='Stomkalkyl – fristående garage';

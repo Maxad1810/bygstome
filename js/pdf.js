@@ -123,6 +123,19 @@ function pdfPlanData(k,withGarage){
     out.garage=gi;
     out.car=gi.car?pdfCarShapes(gi.L,gi.B,gtf):null;
   }
+  out.caps=[];
+  capInfos().forEach(c=>{
+    if(c.host==='h'&&k!==0)return;if(c.host==='g'&&!gi)return;
+    const base=c.host==='g'?[[0,0],[gi.L,0],[gi.L,gi.B],[0,gi.B]][c.w]:ps[c.w];
+    let tf=q=>{const i=c.w,iw=[Math.sin(PDF_TH[i]),Math.cos(PDF_TH[i])];return [base[0]+PDF_DIR[i][0]*q[0]+iw[0]*q[1],base[1]+PDF_DIR[i][1]*q[0]+iw[1]*q[1]];};
+    const t0=tf;
+    if(c.host==='g')tf=q=>{const r=t0(q);return gi.tf(r[0],r[1]);};
+    else if(out.rotFn)tf=q=>out.rotFn(t0(q));
+    const x0=c.x0,x1=c.x0+c.L,D=c.D,ps2=[];
+    const n=Math.ceil(c.L/3)+1;
+    for(let i=0;i<n;i++){const x=x0+.1+i*(c.L-.2)/(n-1);ps2.push([[x-.05,-D+.05],[x+.05,-D+.05],[x+.05,-D+.15],[x-.05,-D+.15]].map(tf));}
+    out.caps.push({roof:[[x0,0],[x1,0],[x1,-D],[x0,-D]].map(tf),posts:ps2,car:c.car?pdfCarShapes(c.L,D,q=>tf([x0+q[0],-D+q[1]])):null});
+  });
   return out;
 }
 /* bil sedd uppifrån, några sammanhängande ritade former i garagets koordinater */
@@ -217,9 +230,10 @@ function pdfInnerWall(doc,w,P,arch){
   }else seg(0,L);
 }
 /* ----- ett planblad ----- */
+const arch0=o=>o.arch?0:55;
 function pdfDrawPlan(doc,d,box,opt){
   const xs=[],zs=[],addp=p=>{xs.push(p[0]);zs.push(p[1]);};
-  d.walls.forEach(pl=>pl.forEach(addp));d.deck.forEach(x=>x.poly.forEach(addp));d.gwalls.forEach(pl=>pl.forEach(addp));(d.groof||[]).forEach(addp);
+  d.walls.forEach(pl=>pl.forEach(addp));d.deck.forEach(x=>x.poly.forEach(addp));d.gwalls.forEach(pl=>pl.forEach(addp));(d.groof||[]).forEach(addp);(d.caps||[]).forEach(c=>c.roof.forEach(addp));
   if(!xs.length)return null;
   const mg=opt.mg||0,minx=Math.min(...xs)-mg,maxx=Math.max(...xs)+mg,minz=Math.min(...zs)-mg,maxz=Math.max(...zs)+mg;
   const F=pdfFit(minx,maxx,minz,maxz,box),P=F.P,sc=F.sc;
@@ -245,6 +259,11 @@ function pdfDrawPlan(doc,d,box,opt){
   d.walls.forEach(pl=>pdfPoly(doc,pl,P,'FD'));d.gwalls.forEach(pl=>pdfPoly(doc,pl,P,'FD'));
   if(d.car){doc.setDrawColor(70);doc.setLineWidth(.18);doc.setFillColor(255,255,255);d.car.forEach((pl,i)=>pdfPoly(doc,pl,P,i===0?'FD':'S'));}
   if(d.groof){doc.setDrawColor(120,80,40);doc.setLineWidth(.35);doc.setLineDashPattern([3,1.5],0);pdfPoly(doc,d.groof,P,'S');doc.setLineDashPattern([],0);}
+  (d.caps||[]).forEach(c=>{
+    if(c.car){doc.setDrawColor(70);doc.setLineWidth(.18);doc.setFillColor(255,255,255);c.car.forEach((pl,i)=>pdfPoly(doc,pl,P,i===0?'FD':'S'));}
+    doc.setDrawColor(120,80,40);doc.setLineWidth(.35);doc.setLineDashPattern([3,1.5],0);pdfPoly(doc,c.roof,P,'S');doc.setLineDashPattern([],0);
+    doc.setDrawColor(20);doc.setFillColor(arch0(opt),arch0(opt),arch0(opt));doc.setLineWidth(.2);c.posts.forEach(pl=>pdfPoly(doc,pl,P,'FD'));
+  });
   (d.iw||[]).forEach(w=>pdfInnerWall(doc,w,P,opt.arch));
   d.opens.forEach(o=>pdfOpenDraw(doc,o,P,opt.arch));d.gopens.forEach(o=>pdfOpenDraw(doc,o,P,opt.arch));
   if(!opt.arch)d.els.forEach(e=>{const q=P(e.x,e.z);pdfSym(doc,e,q);doc.setFontSize(5.5);doc.setTextColor(200,60,20);doc.text(e.id,q[0]+1.7,q[1]-1.4);});

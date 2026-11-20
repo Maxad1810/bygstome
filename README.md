@@ -161,3 +161,6 @@ Under **Innerväggar** i panelen klickar du två punkter i planvyn för att läg
 
 ## Snett tak (pulpettak)
 Välj **Taktyp: Snett tak (pulpet)** för huset (under Tak) och/eller för garaget. Du väljer också vilken sida som är högst (baksidan eller framsidan). Taket får ett enda fall med takfot på den låga sidan, den höga väggen blir högre, och gavlarna blir trapetsformade. Det räknas i kalkylen (takstolar, yta, plåt, rännor, extra reglar och väggyta för den höga väggen), syns i 3D och i fasad- och snittritningarna (även Byggritning A3). Vingar har alltid sadeltak, och carport har sin egen taklutning.
+
+## Carport vid hus och garage
+Bocka i "Carport vid huset" eller "Lägg till carport vid byggnaden" i garagets fält. Välj vägg, start, längd, djup och höjd. Carporten är ett pulpettak (8°) med ledger mot väggen, stolpar längs ytterkanten och en valfri bil. Den ingår i inköpslistan, 3D och planritningen (ej i fasadritningarna).
