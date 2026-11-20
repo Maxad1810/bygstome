@@ -363,6 +363,7 @@ function pdfElevCell(doc,cfg,w,cx0,cy0,cellW,cellH,sc,title){
   if(cfg.panelStd){for(let x=.12;x<ws[w];x+=.12)doc.line(X(x),Y(HT),X(x),Y(yb));}
   else{for(let y=yb+.12;y<HT;y+=.12)doc.line(X(0),Y(y),X(ws[w]),Y(y));}
   }
+  if(cfg.kn&&!cfg.ghost){const kw=.125,kh=HT-yb;doc.setFillColor(...(AR?[255,255,255]:hexRgb(cfg.kn)));doc.setDrawColor(AR?0:60);doc.setLineWidth(AR?.25:.15);doc.rect(X(-.03),Y(HT),(kw+.03)*sc,kh*sc,'FD');doc.rect(X(ws[w]-kw),Y(HT),(kw+.03)*sc,kh*sc,'FD');}
   // våningsskarvar
   cfg.floors.forEach(fy=>{if(AR)doc.setDrawColor(150);else doc.setDrawColor(255,255,255);doc.setLineWidth(.2);doc.line(X(0),Y(fy),X(ws[w]),Y(fy));});
   // tak
@@ -608,12 +609,12 @@ function pdfBuild(){
   const olist=pdfOpenList();
   const houseCfg={pu:PUh?{dir:roofDir(null)}:null,ws,Htot,ridge,O:O_,tn,RW,gable:[false,true,false,true],floors,levels:[y00,...floors.map((f,i)=>y00+(i+1)*(H+jh+.022))].slice(0,N),yFloor,
     ops:olist.filter(o=>o.grp==='Hus'),plinth:$('gr').value==='p'?fo-jh:0,bodyBottom:$('gr').value==='p'?fo-jh:0,panelStd:$('pd').value==='s',
-    caps:capInfos().filter(c=>c.host==='h'),decks:pdfDecks(),ps:[[0,0],[ws[0],0],[ws[0],ws[1]],[ws[0]-ws[2],ws[1]]]};
+    kn:$('kn').checked?$('kc').value:null,caps:capInfos().filter(c=>c.host==='h'),decks:pdfDecks(),ps:[[0,0],[ws[0],0],[ws[0],ws[1]],[ws[0]-ws[2],ws[1]]]};
   houseCfg.levels=[];for(let k=0;k<N;k++)houseCfg.levels.push(yFloor(k));
   const names=['Framsida (v\u00e4gg 1)','H\u00f6ger sida (v\u00e4gg 2)','Baksida (v\u00e4gg 3)','V\u00e4nster sida (v\u00e4gg 4)'];
   if(hus)pdfElevPage(doc,head,houseCfg,'Fasader \u2013 hus',names,PW,PH,M0);
   if(gi){
-    const gPU=gi.type!=='c'&&roofIsPulpet({wing:true,gar:true}),gH=.15+gi.H,gcfg={pu:gPU?{dir:roofDir({gar:true})}:null,ws:[gi.L,gi.B,gi.L,gi.B],Htot:gH,ridge:gH+tn*gi.B*(gPU?1:.5),O:O_,tn,RW:gi.B,caps:capInfos().filter(c=>c.host==='g'),gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,
+    const gPU=gi.type!=='c'&&roofIsPulpet({wing:true,gar:true}),gH=.15+gi.H,gcfg={pu:gPU?{dir:roofDir({gar:true})}:null,ws:[gi.L,gi.B,gi.L,gi.B],Htot:gH,ridge:gH+tn*gi.B*(gPU?1:.5),O:O_,tn,RW:gi.B,kn:$('gkn').checked?$('gkc').value:null,caps:capInfos().filter(c=>c.host==='g'),gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,
       ops:olist.filter(o=>o.grp==='Garage'),plinth:0,bodyBottom:0,panelStd:$('pd').value==='s',deck:null,ghost:gi.type==='c'};
     if(gi.type==='c'){gcfg.gable=[false,false,false,false];gcfg.ridge=gcfg.Htot+.12;}
     pdfElevPage(doc,head,gcfg,'Fasader \u2013 '+GN().toLowerCase(),['Garage: l\u00e5ngsida (v\u00e4gg 1)','Garage: gavel med port (v\u00e4gg 2)','Garage: l\u00e5ngsida (v\u00e4gg 3)','Garage: gavel (v\u00e4gg 4)'],PW,PH,M0);

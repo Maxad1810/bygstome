@@ -328,6 +328,7 @@ function calc(){
   {const bs=parseInt($('hBS').value)||0;if(hus&&Nm>1&&bs>0)all.push(['Stöd under mellanbjälklag',[['Limträbalk 115x315 (bjälklagsstöd)',nf(bs*(Nm-1))+' st','längd '+nf(g('FL'),1)+' m · en per stödlinje och våning']]]);}
   garageRows().forEach(x=>all.push(x));
   capInfos().forEach(c=>all.push(capRows(c)));
+  {const gk=garageInfo();if(gk&&gk.type!=='c'&&$('gkn').checked)all.push(['Knutar \u2013 '+GN().toLowerCase(),[['H\u00f6rnbr\u00e4dor (garage)',nf(8)+' st','2 per h\u00f6rn \u00b7 l\u00e4ngd '+nf(gk.H+.15,1)+' m']]]);}
   const shn={r:'',l:'L-form',t:'T-form',x:'X-form',u:'U-form'}[$('hs').value];
   TITLE='Stomkalkyl – hus '+nf(g('L'),1)+'×'+nf(g('W'),1)+' m'+(shn?' ('+shn+', vinge '+nf(WL,1)+'×'+nf(WB,1)+' m)':'')+(Nm>1?', '+Nm+' våningar (huvudhus)':'');
   if(!hus)TITLE='Stomkalkyl – fristående garage';
@@ -472,7 +473,7 @@ function calcCore(o){
     ['Insektsnät/ventilationsprofil',nf(per*2*1.05,1)+' m','nederkant och överkant, öppen luftspalt'],
     ...($('pd').value==='s'?[['Tvärläkt fasad 28×45',nf(per*pc(H/.6)*sp,0)+' m','c/c 600 mm, bär stående panel']]:[]),
     ['Fasadpanel 22×145',nf(wallA*1.1*sp/.12,0)+' m',($('pd').value==='s'?'Stående · ':'Liggande · ')+nf(wallA*1.1*sp,1)+' m² med 10 % extra och spill'],
-    ['Hörnbrädor',nf(8)+' st','2 per hörn · längd '+nf(H,1)+' m']]],
+    ...($('kn').checked?[['Hörnbrädor',nf(8)+' st','2 per hörn · längd '+nf(H,1)+' m']]:[])]],
    ['Tak',[
     ...roofFrame,
     ['Takyta',nf(roofA,1)+' m²',(PU?'Snett tak · ':'')+nf(P)+'° · takfot '+nf(O,1)+' m'],

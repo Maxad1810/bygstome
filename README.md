@@ -164,3 +164,6 @@ Välj **Taktyp: Snett tak (pulpet)** för huset (under Tak) och/eller för garag
 
 ## Carport vid hus och garage
 Bocka i "Carport vid huset" eller "Lägg till carport vid byggnaden" i garagets fält. Välj vägg, start, längd, djup och höjd. Carporten är ett pulpettak (8°) med ledger mot väggen, stolpar längs ytterkanten och en valfri bil. Den ingår i inköpslistan, 3D och planritningen Den syns även i fasadritningarna, kan dras med handtag i 3D (längd, start, djup) och har ett fält för golvnivå över mark.
+
+## Knutar
+Välj färg på knutarna (hörnbrädorna) för huset under Fasadfärg och för garaget i garagets fält. De syns i 3D och i fasadritningarna och kan stängas av.
