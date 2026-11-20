@@ -137,7 +137,7 @@ function capInfos(){
   const mk=(host,pre,wl,label)=>{
     const w=Math.min(3,Math.max(0,parseInt($(pre+'S').value)||0)),wlen=wl[w]||0;if(wlen<1)return;
     const L=Math.max(2,Math.min(g0(pre+'L'),wlen)),x0=Math.min(Math.max(g0(pre+'X'),0),Math.max(0,wlen-L));
-    out.push({host,w,L,x0,D:Math.max(2,g0(pre+'D')),H:Math.max(2,g0(pre+'H')),car:$(pre+'Car').checked,label});
+    out.push({host,w,L,x0,D:Math.max(2,g0(pre+'D')),H:Math.max(2,g0(pre+'H')),lvl:Math.max(0,Math.min(1.5,g0(pre+'Y'))),pre,car:$(pre+'Car').checked,label});
   };
   if($('bHus').checked&&$('cp')&&$('cp').checked)mk('h','cp',[g0('W1'),g0('W2'),g0('W3'),g0('W4')],'Carport vid huset');
   const gi=garageInfo();
@@ -148,7 +148,7 @@ function capRows(c){
   const L=c.L,D=c.D,H=c.H,A=L*D,sp=1+g0('S')/100,pc=Math.ceil,tn=Math.tan(8*Math.PI/180),rise=tn*D;
   const nP=pc(L/3)+1,slope=Math.hypot(D+.4,rise),roofA=(L+.4)*slope,rafN=pc(L/.9)+1;
   return [c.label,[
-    ['Stolpar 95x95 (carport)',nf(nP)+' st','l\u00e4ngd '+nf(H+.3,1)+' m \u00b7 l\u00e4ngs ytterkanten'],
+    ['Stolpar 95x95 (carport)',nf(nP)+' st','l\u00e4ngd '+nf(H+.3+c.lvl,1)+' m \u00b7 l\u00e4ngs ytterkanten'],
     ['Plintar (carport)',nf(nP)+' st','under varje stolpe'],
     ['B\u00e4rbalk 2\u00d745x195 (carport)',nf(pc(2*L*sp/4.8)*2)+' st','\u00e0 4,8 m \u00b7 '+nf(2*L,1)+' m, dubbla'],
     ['Ledger 45x195 mot v\u00e4gg (carport)',nf(pc(L*sp/4.8))+' st','\u00e0 4,8 m \u00b7 '+nf(L,1)+' m'],

@@ -52,9 +52,10 @@ function bind3d(R){
     const h=dragH,G=R.geo,p=new THREE.Vector3();setM(e);
     if(!(h.t==='gar'?ipw:ipl)(new THREE.Plane(new THREE.Vector3(0,1,0),-h.y),p))return;
     let lx,lz;
-    if(h.t==='deck'||h.t==='balc'){if(!G)return;const s0=G.ps[h.sd],dr=G.dirs[h.sd],dx=p.x-s0[0],dz=p.z-s0[1];lx=dx*dr[0]+dz*dr[1];lz=dz*dr[0]-dx*dr[1];}
+    if(h.t==='deck'||h.t==='balc'||(h.t==='cap'&&h.host==='h')){if(!G)return;const s0=G.ps[h.sd],dr=G.dirs[h.sd],dx=p.x-s0[0],dz=p.z-s0[1];lx=dx*dr[0]+dz*dr[1];lz=dz*dr[0]-dx*dr[1];}
     else{const dx=p.x-h.ox,dz=p.z-h.oz,c=Math.cos(h.th),s=Math.sin(h.th);lx=dx*c-dz*s;lz=dx*s+dz*c;}
-    if(!h.b){h.b={lx,lz,v:{dkL:g0('dkL'),dkX:g0('dkX'),dkD:g0('dkD'),bkX:g0('bkX'),bkL:g0('bkL'),bkD:g0('bkD'),gaL:g0('gaL'),gaB:g0('gaB'),GL:g0('GL'),GB:g0('GB'),rx:window.WEXT||0}};return;}
+    if(h.t==='cap'&&h.host==='g'){const gi=garageInfo();if(!gi)return;const b0=[[0,0],[gi.L,0],[gi.L,gi.B],[0,gi.B]][h.sd],dr=[[1,0],[0,1],[-1,0],[0,-1]][h.sd],dx=lx-b0[0],dz=lz-b0[1];lx=dx*dr[0]+dz*dr[1];lz=dz*dr[0]-dx*dr[1];}
+    if(!h.b){h.b={lx,lz,v:{cx:h.pre?g0(h.pre+'X'):0,cl:h.pre?g0(h.pre+'L'):0,cd:h.pre?g0(h.pre+'D'):0,dkL:g0('dkL'),dkX:g0('dkX'),dkD:g0('dkD'),bkX:g0('bkX'),bkL:g0('bkL'),bkD:g0('bkD'),gaL:g0('gaL'),gaB:g0('gaB'),GL:g0('GL'),GB:g0('GB'),rx:window.WEXT||0}};return;}
     const v=h.b.v,ax=lx-h.b.lx,az=lz-h.b.lz,r1=n=>Math.round(n*10)/10,r2=n=>Math.round(n*20)/20,f=n=>nf(n,1).replace(/ /g,' ')+' m';
     let tip='';
     if(h.t==='deck'){
@@ -66,6 +67,11 @@ function bind3d(R){
       if(h.k==='e'){const L=Math.min(Math.max(1,r1(v.bkL+ax)),Math.max(1,wl-g0('bkX')));$('bkL').value=String(L);tip='Balkongens längd '+f(L);}
       else if(h.k==='s'){const X=Math.max(0,r2(v.bkX+ax)),L=Math.max(1,r1(v.bkL-(X-v.bkX)));$('bkX').value=String(X);$('bkL').value=String(L);tip='Balkongens längd '+f(L);}
       else{const D=Math.min(4,Math.max(.8,r1(v.bkD-az)));$('bkD').value=String(D);tip='Balkongens djup '+f(D);}
+    }else if(h.t==='cap'){
+      const gi=garageInfo(),wl=h.host==='g'?[gi.L,gi.B,gi.L,gi.B][h.sd]:[g0('W1'),g0('W2'),g0('W3'),g0('W4')][h.sd],pr=h.pre;
+      if(h.k==='e'){const L=Math.min(Math.max(2,r1(v.cl+ax)),Math.max(2,wl-v.cx));$(pr+'L').value=String(L);tip='Carportens l\u00e4ngd '+f(L);}
+      else if(h.k==='s'){const X=Math.min(Math.max(0,r2(v.cx+ax)),v.cx+v.cl-2),L=Math.max(2,r1(v.cl-(X-v.cx)));$(pr+'X').value=String(X);$(pr+'L').value=String(L);tip='Carportens l\u00e4ngd '+f(L);}
+      else{const D=Math.min(12,Math.max(2,r1(v.cd-az)));$(pr+'D').value=String(D);tip='Carportens djup '+f(D);}
     }else if(h.t==='gar'){
       if(h.k==='L'){const L=Math.min(30,Math.max(3,r1(v.gaL+ax)));$('gaL').value=String(L);tip='Längd '+f(L);}
       else{const B=Math.min(20,Math.max(2.5,r1(v.gaB+az)));$('gaB').value=String(B);tip='Bredd '+f(B);}
@@ -715,7 +721,7 @@ function capFrame(c){
   return {p:ps[c.w],th:[0,-Math.PI/2,Math.PI,Math.PI/2][c.w]};
 }
 function cap3d(R,parent,c){
-  const f=capFrame(c),g=new THREE.Group();g.position.set(f.p[0],0,f.p[1]);g.rotation.y=f.th;parent.add(g);
+  const f=capFrame(c),g=new THREE.Group();g.position.set(f.p[0],c.lvl||0,f.p[1]);g.rotation.y=f.th;parent.add(g);
   const L=c.L,D=c.D,H=c.H,x0=c.x0,tn=Math.tan(8*Math.PI/180),rise=tn*D,V3=THREE.Vector3,zo=-D;
   const mkx=(sx,sy,sz,mat,x,y,z)=>{const m=new THREE.Mesh(R3.box,mat);m.scale.set(sx,sy,sz);m.position.set(x,y,z);g.add(m);return m;};
   mkx(L+.2,.1,D,M.conc,x0+L/2,.05,-D/2);
@@ -726,6 +732,8 @@ function cap3d(R,parent,c){
   mkx(L,.195,.09,M.joist,x0+L/2,.1+H+rise-.0975,-.045);
   for(let x=x0+.05;x<=x0+L-.04;x+=.9)beam(g,new V3(x,yH(0),0),new V3(x,yH(-D-.2),-D-.2),.045,.145,M.joist);
   beam(g,new V3(x0+L/2,yH(0)+.1,0),new V3(x0+L/2,yH(-D-.2)+.1,-D-.2),L+.4,.02,M.metal);
+  const hd={t:'cap',host:c.host,pre:c.pre,sd:c.w,ox:0,oz:0,th:0};
+  mkHnd(g,x0+L,H*.5,-D,Object.assign({k:'e'},hd));mkHnd(g,x0,H*.5,-D,Object.assign({k:'s'},hd));mkHnd(g,x0+L/2,.3,-D,Object.assign({k:'d'},hd));
   if(c.car){const cg=new THREE.Group();cg.position.set(x0,0,-D);g.add(cg);car3d(cg,L,D,.1);}
 }
 function carport3d(R,gg,gi){

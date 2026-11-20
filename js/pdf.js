@@ -321,6 +321,25 @@ function pdfLegend(doc,lx,ly,items){
 }
 
 /* ----- fasader ----- */
+function pdfElevCaps(doc,cfg,w,X,Y,sc){
+  const AR=!!cfg.arch,tn8=Math.tan(8*Math.PI/180);
+  (cfg.caps||[]).forEach(c=>{
+    const ws=cfg.ws,rise=tn8*c.D,hb=c.H+c.lvl;
+    doc.setDrawColor(AR?0:60);doc.setLineWidth(AR?.35:.25);doc.setFillColor(...(AR?[255,255,255]:[150,115,70]));
+    const post=(x)=>doc.rect(X(x-.0475),Y(hb-.1),.095*sc,(hb-.1-c.lvl)*sc,'FD');
+    const roofC=AR?[255,255,255]:[110,125,140];
+    if(w===c.w){
+      doc.setFillColor(...roofC);doc.rect(X(c.x0-.1),Y(hb+.12),(c.L+.2)*sc,.22*sc,'FD');
+      doc.setFillColor(...(AR?[255,255,255]:[150,115,70]));
+      const n=Math.ceil(c.L/3)+1;for(let i=0;i<n;i++)post(c.x0+.1+i*(c.L-.2)/(n-1));
+    }else if(w===(c.w+1)%4||w===(c.w+3)%4){
+      const s1=w===(c.w+1)%4,xw=s1?0:ws[w],dir=s1?-1:1,xo=xw+dir*(c.D+.2);
+      doc.setFillColor(...roofC);doc.triangle(X(xw),Y(hb+rise+.1),X(xo),Y(hb+.1),X(xo),Y(hb+.1-.22),'FD');
+      doc.setFillColor(...(AR?[255,255,255]:[150,115,70]));
+      const px=xw+dir*(c.D+.1);doc.rect(X(px-.0475),Y(hb-.1),.095*sc,(hb-.1-c.lvl)*sc,'FD');
+    }
+  });
+}
 function pdfElevCell(doc,cfg,w,cx0,cy0,cellW,cellH,sc,title){
   const ws=cfg.ws,Htot=cfg.Htot,ridge=cfg.ridge,AR=!!cfg.arch,gy=cy0+cellH-(AR?5:16),x0=cx0+(AR?3:12)+(cellW-(AR?6:24)-ws[w]*sc)/2;
   const X=x=>x0+x*sc,Y=y=>gy-y*sc;
@@ -429,6 +448,7 @@ function pdfElevCell(doc,cfg,w,cx0,cy0,cellW,cellH,sc,title){
     // etikett
     if(!AR&&dk.polys.some(pp=>pp.w===w)){doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(110,80,40);doc.text(pdfSan(dk.kind==='balc'?'Balkong':'Altan'),X(dk.polys.find(pp=>pp.w===w).poly.reduce((a2,p)=>a2+((p[0]-cfg.ps[w][0])*PDF_DIR[w][0]+(p[1]-cfg.ps[w][1])*PDF_DIR[w][1]),0)/4),Y(dk.top)-1.2,{align:'center'});doc.setFont('helvetica','normal');doc.setTextColor(30);}
   });
+  pdfElevCaps(doc,cfg,w,X,Y,sc);
   if(AR)return;
   // måttkedja nedtill: öppningar + totalt
   const items=cfg.ops.filter(o=>o.wall===w),pts=[0,ws[w]];items.forEach(o=>{pts.push(o.c-o.w/2,o.c+o.w/2);});
@@ -588,12 +608,12 @@ function pdfBuild(){
   const olist=pdfOpenList();
   const houseCfg={pu:PUh?{dir:roofDir(null)}:null,ws,Htot,ridge,O:O_,tn,RW,gable:[false,true,false,true],floors,levels:[y00,...floors.map((f,i)=>y00+(i+1)*(H+jh+.022))].slice(0,N),yFloor,
     ops:olist.filter(o=>o.grp==='Hus'),plinth:$('gr').value==='p'?fo-jh:0,bodyBottom:$('gr').value==='p'?fo-jh:0,panelStd:$('pd').value==='s',
-    decks:pdfDecks(),ps:[[0,0],[ws[0],0],[ws[0],ws[1]],[ws[0]-ws[2],ws[1]]]};
+    caps:capInfos().filter(c=>c.host==='h'),decks:pdfDecks(),ps:[[0,0],[ws[0],0],[ws[0],ws[1]],[ws[0]-ws[2],ws[1]]]};
   houseCfg.levels=[];for(let k=0;k<N;k++)houseCfg.levels.push(yFloor(k));
   const names=['Framsida (v\u00e4gg 1)','H\u00f6ger sida (v\u00e4gg 2)','Baksida (v\u00e4gg 3)','V\u00e4nster sida (v\u00e4gg 4)'];
   if(hus)pdfElevPage(doc,head,houseCfg,'Fasader \u2013 hus',names,PW,PH,M0);
   if(gi){
-    const gPU=gi.type!=='c'&&roofIsPulpet({wing:true,gar:true}),gH=.15+gi.H,gcfg={pu:gPU?{dir:roofDir({gar:true})}:null,ws:[gi.L,gi.B,gi.L,gi.B],Htot:gH,ridge:gH+tn*gi.B*(gPU?1:.5),O:O_,tn,RW:gi.B,gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,
+    const gPU=gi.type!=='c'&&roofIsPulpet({wing:true,gar:true}),gH=.15+gi.H,gcfg={pu:gPU?{dir:roofDir({gar:true})}:null,ws:[gi.L,gi.B,gi.L,gi.B],Htot:gH,ridge:gH+tn*gi.B*(gPU?1:.5),O:O_,tn,RW:gi.B,caps:capInfos().filter(c=>c.host==='g'),gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,
       ops:olist.filter(o=>o.grp==='Garage'),plinth:0,bodyBottom:0,panelStd:$('pd').value==='s',deck:null,ghost:gi.type==='c'};
     if(gi.type==='c'){gcfg.gable=[false,false,false,false];gcfg.ridge=gcfg.Htot+.12;}
     pdfElevPage(doc,head,gcfg,'Fasader \u2013 '+GN().toLowerCase(),['Garage: l\u00e5ngsida (v\u00e4gg 1)','Garage: gavel med port (v\u00e4gg 2)','Garage: l\u00e5ngsida (v\u00e4gg 3)','Garage: gavel (v\u00e4gg 4)'],PW,PH,M0);

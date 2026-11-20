@@ -113,7 +113,7 @@ function pdfArchBuild(){
     const maxK=Math.max(N,...WINGS.map((w,i)=>wcount(i)));
     let wingA=0;WINGS.forEach(w=>{wingA+=g('GL')*g('GB');});
     const ok=$('hs').value==='r';
-    const houseCfg={pu:PUh?{dir:roofDir(null)}:null,ws,Htot,ridge,O:O_,tn,RW,gable:[false,true,false,true],floors,levels:[],yFloor,ops:olist.filter(o=>o.grp==='Hus'),plinth:grOn?fo-jh:0,bodyBottom:grOn?fo-jh:0,panelStd:$('pd').value==='s',decks:pdfDecks(),ps:[[0,0],[ws[0],0],[ws[0],ws[1]],[ws[0]-ws[2],ws[1]]]};
+    const houseCfg={pu:PUh?{dir:roofDir(null)}:null,ws,Htot,ridge,O:O_,tn,RW,gable:[false,true,false,true],floors,levels:[],yFloor,ops:olist.filter(o=>o.grp==='Hus'),caps:capInfos().filter(c=>c.host==='h'),plinth:grOn?fo-jh:0,bodyBottom:grOn?fo-jh:0,panelStd:$('pd').value==='s',decks:pdfDecks(),ps:[[0,0],[ws[0],0],[ws[0],ws[1]],[ws[0]-ws[2],ws[1]]]};
     for(let k=0;k<N;k++)houseCfg.levels.push(yFloor(k));
     for(let k=0;k<maxK;k++){
       newPage();
@@ -131,7 +131,7 @@ function pdfArchBuild(){
     d.walls=pdfWallPolys(gps,gws,gws.map(l=>[{s:0,e:l}]),id);
     if(gi.type==='c'){d.walls=carportPosts(gi);d.groof=[[-.2,-.2],[gi.L+.2,-.2],[gi.L+.2,gi.B+.2],[-.2,gi.B+.2]];}
     olist.filter(o=>o.grp==='Garage').forEach(o=>d.opens.push(pdfOpenShape(gps,o.wall,o,id)));
-    const gPU=gi.type!=='c'&&roofIsPulpet({wing:true,gar:true}),gH=.15+gi.H,gcfg={pu:gPU?{dir:roofDir({gar:true})}:null,ws:gws,Htot:gH,ridge:gH+tn*gi.B*(gPU?1:.5),O:O_,tn,RW:gi.B,gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,ops:olist.filter(o=>o.grp==='Garage'),plinth:0,bodyBottom:0,panelStd:$('pd').value==='s',decks:null,ghost:gi.type==='c'};
+    const gPU=gi.type!=='c'&&roofIsPulpet({wing:true,gar:true}),gH=.15+gi.H,gcfg={pu:gPU?{dir:roofDir({gar:true})}:null,ws:gws,Htot:gH,ridge:gH+tn*gi.B*(gPU?1:.5),O:O_,tn,RW:gi.B,caps:capInfos().filter(c=>c.host==='g'),gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,ops:olist.filter(o=>o.grp==='Garage'),plinth:0,bodyBottom:0,panelStd:$('pd').value==='s',decks:null,ghost:gi.type==='c'};
     if(gi.type==='c'){gcfg.gable=[false,false,false,false];gcfg.ridge=gcfg.Htot+.12;}
     archSheet(doc,{d,titel:titel+' - '+GN(),datum,planLabel:'PLAN '+GN().toUpperCase(),area:nf(gi.L*gi.B,1)+' m²',what:'PLAN/FASAD',inner:null,sect:false,
       elev:{cfg:gcfg,names:['Långsida','Gavel med port','Långsida','Gavel']},section:null});
