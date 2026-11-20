@@ -127,7 +127,7 @@ function pdfArchBuild(){
   if(gi){
     newPage();
     const gps=[[0,0],[gi.L,0],[gi.L,gi.B],[0,gi.B]],gws=[gi.L,gi.B,gi.L,gi.B],id=p=>p;
-    const d={walls:[],opens:[],deck:[],els:[],ceil:[],gwalls:[],gopens:[],ws:gws,ps:gps,wings:[]};
+    const d={walls:[],opens:[],deck:[],els:[],ceil:[],gwalls:[],gopens:[],ws:gws,ps:gps,wings:[],car:gi.car?pdfCarShapes(gi.L,gi.B,p=>p):null};
     d.walls=pdfWallPolys(gps,gws,gws.map(l=>[{s:0,e:l}]),id);
     if(gi.type==='c'){d.walls=carportPosts(gi);d.groof=[[-.2,-.2],[gi.L+.2,-.2],[gi.L+.2,gi.B+.2],[-.2,gi.B+.2]];}
     olist.filter(o=>o.grp==='Garage').forEach(o=>d.opens.push(pdfOpenShape(gps,o.wall,o,id)));

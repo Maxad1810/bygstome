@@ -121,8 +121,21 @@ function pdfPlanData(k,withGarage){
     if(gi.type==='c'){out.gwalls=carportPosts(gi).map(pl=>pl.map(gtf));out.groof=[[-.2,-.2],[gi.L+.2,-.2],[gi.L+.2,gi.B+.2],[-.2,gi.B+.2]].map(gtf);}
     list.filter(o=>o.grp==='Garage').forEach(o=>out.gopens.push(pdfOpenShape(gps,o.wall,o,gtf)));
     out.garage=gi;
+    out.car=gi.car?pdfCarShapes(gi.L,gi.B,gtf):null;
   }
   return out;
+}
+/* bil sedd uppifrån, några sammanhängande ritade former i garagets koordinater */
+function pdfCarShapes(L,B,tf){
+  const al=L>=B,cl=Math.min(4.6,Math.max(L,B)-.8),cw=Math.min(1.85,Math.min(L,B)-.7);if(cl<2||cw<1.2)return null;
+  const T=(u,v)=>tf(al?[L/2+u,B/2+v]:[L/2+v,B/2+u]),a=cl/2,b=cw/2,c=.28;
+  const poly=pts=>pts.map(p=>T(p[0],p[1]));
+  return [
+    poly([[-a+c,-b],[a-c,-b],[a,-b+c],[a,b-c],[a-c,b],[-a+c,b],[-a,b-c],[-a,-b+c]]),
+    poly([[-.30*cl,-b*.82],[.14*cl,-b*.82],[.2*cl,-b*.6],[.2*cl,b*.6],[.14*cl,b*.82],[-.30*cl,b*.82]]),
+    poly([[a-.35,-b*.82],[a-.15,-b*.82],[a-.15,-b*.5],[a-.35,-b*.5]]),poly([[a-.35,b*.5],[a-.15,b*.5],[a-.15,b*.82],[a-.35,b*.82]]),
+    poly([[-a+.15,-b*.82],[-a+.3,-b*.82],[-a+.3,-b*.5],[-a+.15,-b*.5]]),poly([[-a+.15,b*.5],[-a+.3,b*.5],[-a+.3,b*.82],[-a+.15,b*.82]])
+  ];
 }
 
 /* ----- ritverktyg ----- */
@@ -230,6 +243,7 @@ function pdfDrawPlan(doc,d,box,opt){
   });
   doc.setDrawColor(20);const wf=opt.arch?0:55;doc.setFillColor(wf,wf,wf);doc.setLineWidth(.2);
   d.walls.forEach(pl=>pdfPoly(doc,pl,P,'FD'));d.gwalls.forEach(pl=>pdfPoly(doc,pl,P,'FD'));
+  if(d.car){doc.setDrawColor(70);doc.setLineWidth(.18);doc.setFillColor(255,255,255);d.car.forEach((pl,i)=>pdfPoly(doc,pl,P,i===0?'FD':'S'));}
   if(d.groof){doc.setDrawColor(120,80,40);doc.setLineWidth(.35);doc.setLineDashPattern([3,1.5],0);pdfPoly(doc,d.groof,P,'S');doc.setLineDashPattern([],0);}
   (d.iw||[]).forEach(w=>pdfInnerWall(doc,w,P,opt.arch));
   d.opens.forEach(o=>pdfOpenDraw(doc,o,P,opt.arch));d.gopens.forEach(o=>pdfOpenDraw(doc,o,P,opt.arch));
@@ -538,7 +552,7 @@ function pdfBuild(){
   if(gi){
     head(GN()+' \u2013 planritning');
     const gps=[[0,0],[gi.L,0],[gi.L,gi.B],[0,gi.B]],gws=[gi.L,gi.B,gi.L,gi.B],id=p=>p;
-    const d={walls:[],opens:[],deck:[],els:[],ceil:[],gwalls:[],gopens:[],ws:gws,ps:gps,wings:[]};
+    const d={walls:[],opens:[],deck:[],els:[],ceil:[],gwalls:[],gopens:[],ws:gws,ps:gps,wings:[],car:gi.car?pdfCarShapes(gi.L,gi.B,p=>p):null};
     d.walls=pdfWallPolys(gps,gws,gws.map(l=>[{s:0,e:l}]),id);
     if(gi.type==='c'){d.walls=carportPosts(gi);d.groof=[[-.2,-.2],[gi.L+.2,-.2],[gi.L+.2,gi.B+.2],[-.2,gi.B+.2]];}
     pdfOpenList().filter(o=>o.grp==='Garage').forEach(o=>d.opens.push(pdfOpenShape(gps,o.wall,o,id)));

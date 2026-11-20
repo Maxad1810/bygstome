@@ -346,6 +346,7 @@ function part3d(R,o,parent){
   parent.add(gF,gW,gT,gR,gD,gG,gC,gV,gP,gS,gA,gE,gK);
   gF.visible=$('l1').checked;gW.visible=$('l2').checked;gT.visible=$('l3').checked;const LG={l1:gF,l2:gW,l3:gT,l5:gD,l6:gG,l7:gC,l8:gV,l9:gS,l10:gP,l11:gR,l12:gA,l13:gE,l14:gK};Object.keys(LG).forEach(id=>{LG[id].visible=$(id).checked;(R.layers[id]=R.layers[id]||[]).push(LG[id]);});
   // Golv
+  if(o&&o.gar&&$('gaCar')&&$('gaCar').checked)car3d(parent,FL,FW,.15);
   if(o&&o.slab){mk(gF,FL,.15,FW,M.conc).position.set(FL/2,.075,FW/2);const pb0=new THREE.Mesh(R.box,M.pick);pb0.scale.set(FL,.4,FW);pb0.position.set(FL/2,.2,FW/2);pb0.userData.garage=true;gF.add(pb0);R.pick.push(pb0);}else if(FL>0&&FW>0){
     const xs=[];for(let x=.0225;x<FL-.0225;x+=jc)xs.push(x);xs.push(FL-.0225);
     xs.forEach(x=>{mk(gF,.045,jh,FW,M.joist).position.set(x,fo+jh/2,FW/2);});
@@ -692,8 +693,22 @@ calc=function(){calc0();try{build3d();}catch(e){console.error(e);}try{histSchedu
 $('rs3').onclick=()=>{if(R3)R3.fresh=true;build3d();};
 $('rs4').onclick=()=>{inst=[];build3d();};
 
+function car3d(parent,L,B,y0){
+  const al=L>=B,cl=Math.min(4.6,Math.max(L,B)-.8),cw=Math.min(1.85,Math.min(L,B)-.7);if(cl<2||cw<1.2)return;
+  const k=cl/4.6,g=new THREE.Group();g.position.set(L/2,y0,B/2);g.rotation.y=al?0:Math.PI/2;parent.add(g);
+  const mat=(c,o)=>new THREE.MeshLambertMaterial(Object.assign({color:c},o||{}));
+  const body=mat(0x2d5da8),glass=mat(0x9fd0e8,{transparent:true,opacity:.85}),dark=mat(0x1b1b1b),lamp=mat(0xffe38a),red=mat(0xc43a2f);
+  const bx=(sx,sy,sz,m,x,y,z)=>{const q=new THREE.Mesh(R3.box,m);q.scale.set(sx,sy,sz);q.position.set(x,y,z);g.add(q);return q;};
+  bx(cl,.5*k+.1,cw,body,0,.2+.3*k,0);                                   // kaross
+  bx(cl*.5,.45*k+.05,cw*.9,glass,-cl*.05,.2+.5*k+.1+.22*k,0);            // rutor
+  bx(cl*.46,.04,cw*.92,body,-cl*.05,.2+.5*k+.1+.46*k,0);                 // tak
+  bx(cl*.08,.03,cw*.85,body,cl*.2,.2+.5*k+.1+.46*k-.12,0);
+  [-1,1].forEach(sz=>{bx(.12,.12,.28,lamp,cl/2,.2+.42*k,sz*cw*.32);bx(.1,.12,.28,red,-cl/2,.2+.42*k,sz*cw*.32);});
+  [[.32,1],[.32,-1],[-.32,1],[-.32,-1]].forEach(([fx,sz])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(.32,.32,.22,18),dark);w.rotation.x=Math.PI/2;w.position.set(fx*cl,.32,sz*(cw/2-.06));g.add(w);});
+}
 function carport3d(R,gg,gi){
   const g=new THREE.Group();gg.add(g);
+  if(gi.car)car3d(g,gi.L,gi.B,.1);
   const L=gi.L,B=gi.B,H=gi.H,tn=Math.tan(Math.min(g0('P'),15)*Math.PI/180),rise=tn*B,V3=THREE.Vector3;
   const mkx=(sx,sy,sz,mat,x,y,z)=>{const m=new THREE.Mesh(R.box,mat);m.scale.set(sx,sy,sz);m.position.set(x,y,z);g.add(m);return m;};
   mkx(L+.4,.1,B+.4,M.conc,L/2,.05,B/2);

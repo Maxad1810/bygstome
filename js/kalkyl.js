@@ -109,7 +109,7 @@ function garageInfo(){
   const ox=g0('gaX')-minx,oz=g0('gaZ')-minz,gops=garageOps(L,B);
   const tf=(x,z)=>{const r=rot(x,z);return [ox+r[0],oz+r[1]];};
   const type=($('gaT')&&$('gaT').value)||'g';
-  return {L,B,H:g0('gaH'),th,ox,oz,bw,bh,gops:type==='c'?[]:gops,tf,ins:$('gaI').checked,type};
+  return {L,B,H:g0('gaH'),th,ox,oz,bw,bh,gops:type==='c'?[]:gops,tf,ins:$('gaI').checked,type,car:!!($('gaCar')&&$('gaCar').checked)};
 }
 function carportRows(gi){
   const L=gi.L,B=gi.B,H=gi.H,A=L*B,sp=1+g0('S')/100,pc=Math.ceil,tn=Math.tan(Math.min(g0('P'),15)*Math.PI/180),rise=tn*B;
