@@ -346,6 +346,7 @@ function calcCore(o){
   // Väggreglar
   let studs=ws.reduce((a,l)=>a+Math.ceil(l/cc)+1,0)+8;
   if(!(o&&o.noGable))studs+=2*(Math.ceil(W/cc)+1); // 3-regelhörn
+  if(roofIsPulpet(o)&&!(o&&o.noGable))studs+=Math.ceil((Math.ceil(L/cc)+1)*(W*Math.tan(P*Math.PI/180)/2)/Math.max(.5,H-.135)); // högre vägg på takets höga sida
   const inner=I>0?Math.ceil(I/cc)+1:0;
   let hdrM=0,sillM=0,openA=0,doorW=0;
   ops.forEach(o=>{
@@ -359,22 +360,22 @@ function calcCore(o){
   const plateP=Math.ceil(plateM*sp/4.8);
   const hdrP=Math.ceil(hdrM*sp/4.8);
   const sillP=Math.ceil(sillM*sp/4.8);
-  const wallA=Math.max(0,per*H-openA)+((o&&o.noGable)?0:W*W*Math.tan(P*Math.PI/180)/2);
+  const wallA=Math.max(0,per*H-openA)+((o&&o.noGable)?0:W*W*Math.tan(P*Math.PI/180)/2)+((roofIsPulpet(o)&&!(o&&o.noGable))?L*W*Math.tan(P*Math.PI/180):0);
   const inA=wallA+I*H*2;
   const vind=Math.ceil(wallA*sp/3.24);
   const gips=Math.ceil(inA*sp/2.88);
   const ins=wallA*sp;
   // Tak
-  const rad=P*Math.PI/180,eaveL=L+((o&&o.wing&&!o.gar)?O:2*O),slope=(W/2+O)/Math.cos(rad);
-  const roofA=2*eaveL*slope;
+  const rad=P*Math.PI/180,eaveL=L+((o&&o.wing&&!o.gar)?O:2*O),PU=roofIsPulpet(o),nSl=PU?1:2,slope=(PU?W+O:W/2+O)/Math.cos(rad);
+  const roofA=nSl*eaveL*slope;
   const trusses=Math.ceil(L/ccT)+1;
   const lath=roofA/0.3*sp;
   const pc=Math.ceil,rows=pc(slope/.3)+1,strCnt=pc(eaveL/.6)+1;
-  const strM=2*strCnt*slope*sp,latM=2*rows*eaveL*sp;
+  const strM=nSl*strCnt*slope*sp,latM=nSl*rows*eaveL*sp;
   const paperA=roofA*1.1*sp,rolls=pc(paperA/15);
-  const pl=Math.ceil((slope+.05)*10)/10,plN=2*pc(eaveL/1.0);
-  const gabM=4*slope,vsP=pc(gabM*sp/2),vtP=pc(gabM*sp/4.8),fotM=2*eaveL,fotP=pc(fotM*sp/2);
-  const nockP=pc(eaveL*sp/2),hooks=2*(pc(eaveL/.6)+1),dpN=Math.max(2,pc(fotM/10)),dpL=H*((o&&o.N)||1)+.5;
+  const pl=Math.ceil((slope+.05)*10)/10,plN=nSl*pc(eaveL/1.0);
+  const gabM=2*nSl*slope,vsP=pc(gabM*sp/2),vtP=pc(gabM*sp/4.8),fotM=nSl*eaveL,fotP=pc(fotM*sp/2);
+  const nockP=pc(eaveL*sp/2),hooks=nSl*(pc(eaveL/.6)+1),dpN=Math.max(2,pc(fotM/10)),dpL=H*((o&&o.N)||1)+.5;
   const grOn=$('gr').value==='p'&&!(o&&o.noGrund),ph=g('ph')||.4;
   const lines=pc(FW/2.4)+1,perLine=pc(FL/1.8)+1,plinN=lines*perLine,bmN=pc(lines*FL*sp/4.8)*2;
   const floorRows=[
@@ -399,14 +400,14 @@ function calcCore(o){
   const rowsI=pc(H/.6)+1,instM=per*rowsI*sp,fasStr=(pc(per/.6)+1)*H*sp;
   const opPer=ops.reduce((a,o)=>a+2*(o.w+o.h)*(o.n||0),0)*1.1;
   const opRows=ops.filter(o=>o.n>0).map(o=>[(o.t==='f'?'Fönster ':(o.t==='p'?'Garageport ':'Dörr '))+nf(o.w*1000)+'×'+nf(o.h*1000)+' mm',nf(o.n)+' st','']);
-  const rdim=$('rd').value,glu=$('rt').value==='g',rafL=Math.ceil((slope+.05)*10)/10,rafN=trusses*2;
+  const rdim=$('rd').value,glu=$('rt').value==='g',rafL=Math.ceil((slope+.05)*10)/10,rafN=trusses*nSl;
   const roofFrame=glu?[
     ['Limträsparrar '+rdim,nf(rafN)+' st','längd '+nf(rafL,1)+' m · c/c '+nf(ccT,1)+' m, ett par per läge'],
     ['Limträ nockbalk '+rdim,nf(pc(eaveL/12))+' st','totalt '+nf(eaveL,1)+' m, max 12 m per balk'],
     ['Sparrbeslag/balkskor',nf(rafN*2)+' st','ett i vardera änden'],
-    ...((parseInt($('hNS').value)||0)>0?(()=>{const nS=parseInt($('hNS').value)||0,hp=H+Math.tan(P*Math.PI/180)*W/2;return [['Stolpar 95x95 (nockstöd)',nf(nS)+' st','längd '+nf(hp,1)+' m'],['Plintar (nockstöd)',nf(nS)+' st','under varje stöd']];})():[])
+    ...((parseInt($('hNS').value)||0)>0?(()=>{const nS=parseInt($('hNS').value)||0,hp=H+Math.tan(P*Math.PI/180)*(PU?W:W/2);return [['Stolpar 95x95 (nockstöd)',nf(nS)+' st','längd '+nf(hp,1)+' m'],['Plintar (nockstöd)',nf(nS)+' st','under varje stöd']];})():[])
   ]:[
-    ['Takstolar '+rdim,nf(trusses)+' st','spännvidd '+nf(W,1)+' m · c/c '+nf(ccT,1)+' m'],
+    [(PU?'Takstolar, snett tak ':'Takstolar ')+rdim,nf(trusses)+' st','spännvidd '+nf(W,1)+' m · c/c '+nf(ccT,1)+' m'],
     ['Takstolsbeslag',nf(trusses*2)+' st','2 per takstol']
   ];
   const sec=[
@@ -438,19 +439,19 @@ function calcCore(o){
     ['Hörnbrädor',nf(8)+' st','2 per hörn · längd '+nf(H,1)+' m']]],
    ['Tak',[
     ...roofFrame,
-    ['Takyta',nf(roofA,1)+' m²',''+nf(P)+'° · takfot '+nf(O,1)+' m'],
+    ['Takyta',nf(roofA,1)+' m²',(PU?'Snett tak · ':'')+nf(P)+'° · takfot '+nf(O,1)+' m'],
     
     ['Underlagstak/råspont',nf(roofA*sp,1)+' m²','med spill'],
     ['Underlagspapp (takpapp)',nf(rolls)+' rullar','à 15 m² · '+nf(paperA,1)+' m² inkl. 10 % överlapp och spill'],
     ['Ströläkt 25×48',nf(strM,0)+' m','c/c 600 mm, i takets lutningsriktning'],
-    ['Tvärläkt/bärläkt (c/c 300 mm)',nf(latM,0)+' m',nf(2*rows)+' rader'],
+    ['Tvärläkt/bärläkt (c/c 300 mm)',nf(latM,0)+' m',nf(nSl*rows)+' rader'],
     ['Takplåt',nf(plN)+' st','längd '+nf(pl,1)+' m · täckbredd 1,0 m · '+nf(roofA,1)+' m² tak'],
     ['Takskruv (plåt)',nf(pc(roofA*6*sp))+' st','ca 6 st/m²']]],
    ['Plåtdetaljer och vindskivor',[
     ['Vindskiva (trä) 22×145',nf(vtP)+' st','à 4,8 m · '+nf(gabM,1)+' m längs gavlarna'],
     ['Vindskiveplåt',nf(vsP)+' st','à 2 m · '+nf(gabM,1)+' m'],
     ['Takfotsplåt (droppkant)',nf(fotP)+' st','à 2 m · '+nf(fotM,1)+' m'],
-    ['Nockplåt',nf(nockP)+' st','à 2 m · '+nf(eaveL,1)+' m'],
+    [PU?'Avslutsplåt, takets höga kant':'Nockplåt',nf(nockP)+' st','à 2 m · '+nf(eaveL,1)+' m'],
     ...((o&&o.wing&&!o.gar)?(()=>{const tv=Math.tan(rad),vl=(W/2)*Math.sqrt(2+tv*tv),vm=2*vl*1.1;return [['Ränndalsplåt (takanslutning)',nf(vm,1)+' m','2 ränndalar à '+nf(vl,1)+' m, 10 % spill'],['Ränndalsbräda 22x195',nf(vm,1)+' m','under plåten i ränndalen']];})():[]),
     ['Snörasskydd, rör Ø25 (2 rader)',nf(pc(4*(eaveL-.5)*sp/3))+' st','à 3 m · '+nf(4*(eaveL-.5),1)+' m, 0,6 m från takfot'],
     ['Snörasskyddskonsoler',nf(2*(pc((eaveL-.5)/.9)+1))+' st','c/c 900 mm · inkl. tätning och skruv'],

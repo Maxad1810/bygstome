@@ -37,12 +37,12 @@ function pdfArchSection(doc,c,box){
   R(0,sb,ws1,y00,[255,255,255],.35);
   doc.setLineWidth(.1);doc.setDrawColor(130);for(let u=tw+.2;u<ws1-tw;u+=.6){const a=P(u,sb+.02),b=P(u+.12,y00-.02);doc.line(a[0],a[1],b[0],b[1]);}
   floors.forEach(fy=>{R(0,fy,ws1,fy+jh+.022,[255,255,255],.35);});
-  const half=RW/2+O,cxm=ws1/2,ev=Htot-tn*O,rt=.2;
-  const rp=[[cxm-half,ev],[cxm,ridge],[cxm+half,ev],[cxm+half,ev-rt],[cxm,ridge-rt],[cxm-half,ev-rt]];
+  const half=RW/2+O,cxm=ws1/2,ev=Htot-tn*O,rt=.2,pu=c.pu,mu=u=>pu&&pu.dir===-1?ws1-u:u;
+  const rp=pu?[[mu(-O),ev],[mu(ws1),ridge],[mu(ws1),ridge-rt],[mu(-O),ev-rt]]:[[cxm-half,ev],[cxm,ridge],[cxm+half,ev],[cxm+half,ev-rt],[cxm,ridge-rt],[cxm-half,ev-rt]];
   doc.setFillColor(255,255,255);doc.setDrawColor(0);doc.setLineWidth(.5);pdfPoly(doc,rp,P,'FD');
   doc.setDrawColor(90);doc.setLineWidth(.15);const ca=P(tw,Htot),cb=P(ws1-tw,Htot);doc.line(ca[0],ca[1],cb[0],cb[1]);
   doc.setFillColor(0,0,0);doc.setDrawColor(0);
-  [[0,tw],[ws1-tw,ws1]].forEach(([u1,u2])=>{const a=P(u1,Htot),b=P(u2,sb);doc.rect(a[0],a[1],b[0]-a[0],b[1]-a[1],'FD');});
+  [[0,tw],[ws1-tw,ws1]].forEach(([u1,u2])=>{const hiW=pu&&((pu.dir===1&&u1>0)||(pu.dir===-1&&u1===0)),a=P(u1,hiW?ridge-rt:Htot),b=P(u2,sb);doc.rect(a[0],a[1],b[0]-a[0],b[1]-a[1],'FD');});
   const ar=P(ws1-tw,y00),at=P(ws1-tw,Htot);
   pdfDim(doc,[ar[0]-5,ar[1]],[ar[0]-5,at[1]],0,archMm(Htot-y00),7,0);
   const rb=P(ws1+O+.25,0),rt2=P(ws1+O+.25,ridge);
@@ -50,7 +50,7 @@ function pdfArchSection(doc,c,box){
   const lb=P(0,-.4),rb2=P(ws1,-.4);
   pdfDim(doc,lb,rb2,3.5,archMm(ws1),7,1);
   doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(0);
-  const ap=P(cxm-half+.25,ev+.32);doc.text(pdfSan(nf(c.P,1)+'°'),ap[0],ap[1]);
+  const ap=pu?P(mu(.9),ev+tn*.9+.3):P(cxm-half+.25,ev+.32);doc.text(pdfSan(nf(c.P,1)+'°'),ap[0],ap[1]);
   return F;
 }
 function archSheet(doc,o){
@@ -104,7 +104,7 @@ function pdfArchBuild(){
   const titel=$('pjName').value.trim()||'Ritning',datum=new Date().toLocaleDateString('sv-SE');
   const g=g0,N=mcount(),ws=[g('W1'),g('W2'),g('W3'),g('W4')],H=g('H2'),P_=g('P'),gi=garageInfo(),hus=$('bHus').checked;
   const jh=(parseInt($('jd').value.split('x')[1])||195)/1000,grOn=$('gr').value==='p',fo=(grOn?(g('ph')||.4)+jh:0),y00=fo+jh+.022,tn=Math.tan(P_*Math.PI/180),RW=g('RW'),O_=g('O');
-  const Htot=y00+N*H+(N-1)*(jh+.022),ridge=Htot+tn*RW/2,yFloor=k=>y00+k*(H+jh+.022);
+  const PUh=roofIsPulpet(null),Htot=y00+N*H+(N-1)*(jh+.022),ridge=Htot+tn*(PUh?RW:RW/2),yFloor=k=>y00+k*(H+jh+.022);
   const floors=[];for(let k=1;k<N;k++)floors.push(y00+k*(H+jh+.022)-jh-.022);
   const dh=(parseInt($('dim').value.split('x')[1])||145)/1000,tw=dh+.12;
   const olist=pdfOpenList();let first=true;
@@ -113,7 +113,7 @@ function pdfArchBuild(){
     const maxK=Math.max(N,...WINGS.map((w,i)=>wcount(i)));
     let wingA=0;WINGS.forEach(w=>{wingA+=g('GL')*g('GB');});
     const ok=$('hs').value==='r';
-    const houseCfg={ws,Htot,ridge,O:O_,tn,RW,gable:[false,true,false,true],floors,levels:[],yFloor,ops:olist.filter(o=>o.grp==='Hus'),plinth:grOn?fo-jh:0,bodyBottom:grOn?fo-jh:0,panelStd:$('pd').value==='s',decks:pdfDecks(),ps:[[0,0],[ws[0],0],[ws[0],ws[1]],[ws[0]-ws[2],ws[1]]]};
+    const houseCfg={pu:PUh?{dir:roofDir(null)}:null,ws,Htot,ridge,O:O_,tn,RW,gable:[false,true,false,true],floors,levels:[],yFloor,ops:olist.filter(o=>o.grp==='Hus'),plinth:grOn?fo-jh:0,bodyBottom:grOn?fo-jh:0,panelStd:$('pd').value==='s',decks:pdfDecks(),ps:[[0,0],[ws[0],0],[ws[0],ws[1]],[ws[0]-ws[2],ws[1]]]};
     for(let k=0;k<N;k++)houseCfg.levels.push(yFloor(k));
     for(let k=0;k<maxK;k++){
       newPage();
@@ -121,7 +121,7 @@ function pdfArchBuild(){
       archSheet(doc,{d,titel,datum,planLabel:maxK>1?'PLAN VÅNING '+(k+1):'PLAN',area:nf(ws[0]*ws[1]+wingA,1)+' m²',what:k===0?'PLAN/SEKTION/FASAD':'PLAN VÅN '+(k+1),
         inner:ok&&ia>0&&!IW.some(w=>(w.k||0)===k)?{x:ws[0]*.25,z:ws[1]/2,t:nf(ia,1)+' m²'}:null,sect:k===0,
         elev:k===0?{cfg:houseCfg,names:['Framsida','Höger sida','Baksida','Vänster sida']}:null,
-        section:k===0?{ws1:ws[1],Htot,ridge,O:O_,tn,RW,y00,jh,tw,floors,grOn,ph:g('ph')||.4,P:P_}:null});
+        section:k===0?{pu:houseCfg.pu,ws1:ws[1],Htot,ridge,O:O_,tn,RW,y00,jh,tw,floors,grOn,ph:g('ph')||.4,P:P_}:null});
     }
   }
   if(gi){
@@ -131,7 +131,7 @@ function pdfArchBuild(){
     d.walls=pdfWallPolys(gps,gws,gws.map(l=>[{s:0,e:l}]),id);
     if(gi.type==='c'){d.walls=carportPosts(gi);d.groof=[[-.2,-.2],[gi.L+.2,-.2],[gi.L+.2,gi.B+.2],[-.2,gi.B+.2]];}
     olist.filter(o=>o.grp==='Garage').forEach(o=>d.opens.push(pdfOpenShape(gps,o.wall,o,id)));
-    const gH=.15+gi.H,gcfg={ws:gws,Htot:gH,ridge:gH+tn*gi.B/2,O:O_,tn,RW:gi.B,gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,ops:olist.filter(o=>o.grp==='Garage'),plinth:0,bodyBottom:0,panelStd:$('pd').value==='s',decks:null,ghost:gi.type==='c'};
+    const gPU=gi.type!=='c'&&roofIsPulpet({wing:true,gar:true}),gH=.15+gi.H,gcfg={pu:gPU?{dir:roofDir({gar:true})}:null,ws:gws,Htot:gH,ridge:gH+tn*gi.B*(gPU?1:.5),O:O_,tn,RW:gi.B,gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,ops:olist.filter(o=>o.grp==='Garage'),plinth:0,bodyBottom:0,panelStd:$('pd').value==='s',decks:null,ghost:gi.type==='c'};
     if(gi.type==='c'){gcfg.gable=[false,false,false,false];gcfg.ridge=gcfg.Htot+.12;}
     archSheet(doc,{d,titel:titel+' - '+GN(),datum,planLabel:'PLAN '+GN().toUpperCase(),area:nf(gi.L*gi.B,1)+' m²',what:'PLAN/FASAD',inner:null,sect:false,
       elev:{cfg:gcfg,names:['Långsida','Gavel med port','Långsida','Gavel']},section:null});

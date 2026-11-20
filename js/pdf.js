@@ -299,23 +299,41 @@ function pdfElevCell(doc,cfg,w,cx0,cy0,cellW,cellH,sc,title){
   if(cfg.plinth){doc.setFillColor(160,165,165);doc.setDrawColor(100);doc.setLineWidth(.1);const n=Math.ceil(ws[w]/1.8)+1,hh=cfg.plinth;for(let i=0;i<n;i++){const x=n===1?ws[w]/2:.1+i*(ws[w]-.2)/(n-1);doc.rect(X(x-.1),Y(hh),.2*sc,hh*sc,'FD');}}
   // kropp
   const yb=cfg.bodyBottom||0;
+  const PUe=cfg.pu,lowFace=PUe?(PUe.dir===1?0:2):-1,isLong=(w===0||w===2),HT=(PUe&&isLong&&w!==lowFace)?ridge:Htot;
   if(cfg.ghost){
     doc.setFillColor(150,115,70);doc.setDrawColor(60);doc.setLineWidth(.2);
     const np=Math.ceil(ws[w]/3)+1;for(let i=0;i<np;i++){const x=np===1?ws[w]/2:.15+i*(ws[w]-.3)/(np-1);doc.rect(X(x-.0475),Y(Htot-.1),.095*sc,(Htot-.1)*sc,'FD');}
   }else{
   doc.setFillColor(...(AR?[255,255,255]:hexRgb($('fc').value)));doc.setDrawColor(AR?0:40);doc.setLineWidth(AR?.4:.3);
-  doc.rect(X(0),Y(Htot),ws[w]*sc,(Htot-yb)*sc,'FD');
+  doc.rect(X(0),Y(HT),ws[w]*sc,(HT-yb)*sc,'FD');
   // panellinjer
   doc.setDrawColor(...(AR?[120,120,120]:hexShade($('fc').value,.8)));doc.setLineWidth(AR?.06:.05);
-  if(cfg.panelStd){for(let x=.12;x<ws[w];x+=.12)doc.line(X(x),Y(Htot),X(x),Y(yb));}
-  else{for(let y=yb+.12;y<Htot;y+=.12)doc.line(X(0),Y(y),X(ws[w]),Y(y));}
+  if(cfg.panelStd){for(let x=.12;x<ws[w];x+=.12)doc.line(X(x),Y(HT),X(x),Y(yb));}
+  else{for(let y=yb+.12;y<HT;y+=.12)doc.line(X(0),Y(y),X(ws[w]),Y(y));}
   }
   // våningsskarvar
   cfg.floors.forEach(fy=>{if(AR)doc.setDrawColor(150);else doc.setDrawColor(255,255,255);doc.setLineWidth(.2);doc.line(X(0),Y(fy),X(ws[w]),Y(fy));});
   // tak
   const O=cfg.O,tn=cfg.tn;
   doc.setDrawColor(AR?0:40);doc.setFillColor(...(AR?[255,255,255]:hexRgb($('rcol').value)));doc.setLineWidth(AR?.4:.3);
-  if(cfg.gable[w]){
+  if(PUe){
+    const rc=hexRgb($('rcol').value);
+    if(isLong){
+      if(w===lowFace){
+        pdfPoly(doc,[[-O,Htot-tn*O],[ws[w]+O,Htot-tn*O],[ws[w]+O,ridge],[-O,ridge]],(x,y)=>[X(x),Y(y)],'FD');
+        doc.setDrawColor(AR?0:60);doc.setLineWidth(.35);doc.line(X(-O),Y(Htot-tn*O-.07),X(ws[w]+O),Y(Htot-tn*O-.07));
+        doc.setLineWidth(.4);doc.line(X(ws[w]+O-.2),Y(Htot-tn*O-.07),X(ws[w]+O-.2),Y(0));
+      }else{
+        pdfPoly(doc,[[-.05,ridge],[ws[w]+.05,ridge],[ws[w]+.05,ridge+.1],[-.05,ridge+.1]],(x,y)=>[X(x),Y(y)],'FD');
+      }
+    }else{
+      const hr=(w===1&&PUe.dir===1)||(w===3&&PUe.dir===-1),a=hr?-O:ws[w]+O,b=hr?ws[w]:0;
+      doc.setFillColor(...(AR?[255,255,255]:hexRgb($('fc').value)));doc.setDrawColor(AR?0:40);doc.setLineWidth(AR?.4:.3);
+      pdfPoly(doc,[[0,Htot],[ws[w],Htot],[b,ridge]],(x,y)=>[X(x),Y(y)],'FD');
+      doc.setFillColor(...(AR?[255,255,255]:rc));
+      pdfPoly(doc,[[a,Htot-tn*O],[b,ridge],[b,ridge+.1],[a,Htot-tn*O+.1]],(x,y)=>[X(x),Y(y)],'FD');
+    }
+  }else if(cfg.gable[w]){
     const half=cfg.RW/2+O,cxm=ws[w]/2;
     pdfPoly(doc,[[cxm-half,Htot-tn*O],[cxm,ridge],[cxm+half,Htot-tn*O]],(x,y)=>[X(x),Y(y)],'FD');
     doc.setDrawColor(210);doc.setLineWidth(.12);doc.line(X(cxm-half+.05),Y(Htot-tn*O+.04),X(cxm),Y(ridge-.03));doc.line(X(cxm+half-.05),Y(Htot-tn*O+.04),X(cxm),Y(ridge-.03));
@@ -441,7 +459,7 @@ function pdfBuild(){
   const g=g0,N=mcount(),ws=[g('W1'),g('W2'),g('W3'),g('W4')],H=g('H2'),P_=g('P'),gi=garageInfo();
   const hsn={r:'Rektangel',l:'L-form',t:'T-form',x:'X-form (kors)',u:'U-form'}[$('hs').value];
   const jh=(parseInt($('jd').value.split('x')[1])||195)/1000,fo=($('gr').value==='p'?(g('ph')||.4)+jh:0),y00=fo+jh+.022,tn=Math.tan(P_*Math.PI/180),RW=g('RW'),O_=g('O');
-  const Htot=y00+N*H+(N-1)*(jh+.022),ridge=Htot+tn*RW/2;
+  const PUh=roofIsPulpet(null),Htot=y00+N*H+(N-1)*(jh+.022),ridge=Htot+tn*(PUh?RW:RW/2);
   const floors=[];for(let k=1;k<N;k++)floors.push(y00+k*(H+jh+.022)-jh-.022);
   const yFloor=k=>y00+k*(H+jh+.022);
   // ===== Sida 1: översikt =====
@@ -535,14 +553,14 @@ function pdfBuild(){
   // ===== Fasader =====
   const dk=$('dk').checked?deckSegs():null,hd=g('dkH');
   const olist=pdfOpenList();
-  const houseCfg={ws,Htot,ridge,O:O_,tn,RW,gable:[false,true,false,true],floors,levels:[y00,...floors.map((f,i)=>y00+(i+1)*(H+jh+.022))].slice(0,N),yFloor,
+  const houseCfg={pu:PUh?{dir:roofDir(null)}:null,ws,Htot,ridge,O:O_,tn,RW,gable:[false,true,false,true],floors,levels:[y00,...floors.map((f,i)=>y00+(i+1)*(H+jh+.022))].slice(0,N),yFloor,
     ops:olist.filter(o=>o.grp==='Hus'),plinth:$('gr').value==='p'?fo-jh:0,bodyBottom:$('gr').value==='p'?fo-jh:0,panelStd:$('pd').value==='s',
     decks:pdfDecks(),ps:[[0,0],[ws[0],0],[ws[0],ws[1]],[ws[0]-ws[2],ws[1]]]};
   houseCfg.levels=[];for(let k=0;k<N;k++)houseCfg.levels.push(yFloor(k));
   const names=['Framsida (v\u00e4gg 1)','H\u00f6ger sida (v\u00e4gg 2)','Baksida (v\u00e4gg 3)','V\u00e4nster sida (v\u00e4gg 4)'];
   if(hus)pdfElevPage(doc,head,houseCfg,'Fasader \u2013 hus',names,PW,PH,M0);
   if(gi){
-    const gH=.15+gi.H,gcfg={ws:[gi.L,gi.B,gi.L,gi.B],Htot:gH,ridge:gH+tn*gi.B/2,O:O_,tn,RW:gi.B,gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,
+    const gPU=gi.type!=='c'&&roofIsPulpet({wing:true,gar:true}),gH=.15+gi.H,gcfg={pu:gPU?{dir:roofDir({gar:true})}:null,ws:[gi.L,gi.B,gi.L,gi.B],Htot:gH,ridge:gH+tn*gi.B*(gPU?1:.5),O:O_,tn,RW:gi.B,gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,
       ops:olist.filter(o=>o.grp==='Garage'),plinth:0,bodyBottom:0,panelStd:$('pd').value==='s',deck:null,ghost:gi.type==='c'};
     if(gi.type==='c'){gcfg.gable=[false,false,false,false];gcfg.ridge=gcfg.Htot+.12;}
     pdfElevPage(doc,head,gcfg,'Fasader \u2013 '+GN().toLowerCase(),['Garage: l\u00e5ngsida (v\u00e4gg 1)','Garage: gavel med port (v\u00e4gg 2)','Garage: l\u00e5ngsida (v\u00e4gg 3)','Garage: gavel (v\u00e4gg 4)'],PW,PH,M0);

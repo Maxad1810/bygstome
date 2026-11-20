@@ -158,3 +158,6 @@ Måtten (i rutorna för Längd, Djup och så vidare) följer med, och värdet vi
 
 ## Innerväggar
 Under **Innerväggar** i panelen klickar du två punkter i planvyn för att lägga en vägg (fäster mot ytterväggens insida och rätas upp när det är nästan rakt). Varje vägg kan få en dörr och ett läge. Innerväggarna räknas i kalkylen (reglar, syll, gips) i stället för fältet "Innerväggar, total längd", syns i 3D, i planritningen och i Byggritning (A3). Per våning, och de kan kopieras till nästa våning. Sparas med ritningen.
+
+## Snett tak (pulpettak)
+Välj **Taktyp: Snett tak (pulpet)** för huset (under Tak) och/eller för garaget. Du väljer också vilken sida som är högst (baksidan eller framsidan). Taket får ett enda fall med takfot på den låga sidan, den höga väggen blir högre, och gavlarna blir trapetsformade. Det räknas i kalkylen (takstolar, yta, plåt, rännor, extra reglar och väggyta för den höga väggen), syns i 3D och i fasad- och snittritningarna (även Byggritning A3). Vingar har alltid sadeltak, och carport har sin egen taklutning.
