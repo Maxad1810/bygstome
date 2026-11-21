@@ -322,7 +322,7 @@ function pdfLegend(doc,lx,ly,items){
 
 /* ----- fasader ----- */
 function pdfRoofRise(RW,tn,K){if(K==='m'){const a=RW/2,a1=.3*a;return a1*Math.tan(65*Math.PI/180)+(a-a1)*tn;}return tn*RW/2;}
-function pdfMansard(cx,Ht,RW,tn,O){const a=RW/2,a1=.3*a,tL=Math.tan(65*Math.PI/180),hK=a1*tL,hR=hK+(a-a1)*tn;return [[cx-a-O,Ht-tL*O],[cx-a+a1,Ht+hK],[cx,Ht+hR],[cx+a-a1,Ht+hK],[cx+a+O,Ht-tL*O]];}
+function pdfMansard(cx,Ht,RW,tn,O){const a=RW/2,a1=.3*a,tL=Math.tan(65*Math.PI/180),hK=a1*tL,hR=hK+(a-a1)*tn;return [[cx-a-O,Ht-tn*O],[cx-a+a1,Ht+hK],[cx,Ht+hR],[cx+a-a1,Ht+hK],[cx+a+O,Ht-tn*O]];}
 function pdfElevCaps(doc,cfg,w,X,Y,sc){
   const AR=!!cfg.arch,tn8=Math.tan(8*Math.PI/180);
   (cfg.caps||[]).forEach(c=>{

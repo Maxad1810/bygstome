@@ -553,7 +553,7 @@ function part3d_(R,o,parent){
   const cx=(mnX+mxX)/2-((o&&o.rext)||0)/2,cz=(mnZ+mxZ)/2;
   // Tak
   const base=y0+H,tn=Math.tan(P*Math.PI/180),OT=PU?((o&&o.gar)?g0('gaOT'):g('OT')):0,hsp=PU?RW+OT:RW/2,zr=PU?cz+PD*(RW/2+OT):cz,sides=PU?[-PD]:[-1,1];
-  const RK=roofKind(o),MA=RK==='m'&&!PU,tL=Math.tan(65*Math.PI/180),coL=Math.cos(65*Math.PI/180),siL=Math.sin(65*Math.PI/180),a1=MA?.3*hsp:0,hK=a1*tL,hg=d=>MA?(d<=a1?d*tL:hK+(d-a1)*tn):tn*d,hR=hg(hsp),tE=MA?tL:tn;
+  const RK=roofKind(o),MA=RK==='m'&&!PU,tL=Math.tan(65*Math.PI/180),coL=Math.cos(65*Math.PI/180),siL=Math.sin(65*Math.PI/180),a1=MA?.3*hsp:0,hK=a1*tL,hg=d=>MA?(d<=a1?d*tL:hK+(d-a1)*tn):tn*d,hR=hg(hsp),tE=tn;
   if(RL>0&&RW>0&&!(o&&o.noRoof)){
     const glu=$('rt').value==='g',[rw,rh]=$('rd').value.split('x').map(v=>parseInt(v)/1000),rof=rh/2-.0725;
     const WBg=g0('GB'),ovAt=(sd,x)=>isW?(x<0&&!(o&&o.gar)?0:O):(WINGS.some(w=>w.s===(sd<0?'f':'b')&&x>w.x0&&x<w.x0+WBg)?0:O);
