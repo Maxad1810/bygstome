@@ -278,7 +278,7 @@ function build3d(){
     const act=WINGS.filter((w,i)=>wcount(i)>k),plan=act.length?wingPlan(L0,WB,act):null;
     part3d(R,{plan,noRoof:k<Nm-1,noGrund:k>0,yoff,k,N:Nm},sg);
     if(R.geo){if(k===0)R.geo.yo=[];R.geo.yo[k]=yoff;}
-    if($('kn').checked&&R.geo)knut3d(sg,[[0,0],[g0('W1'),0],[g0('W1'),g0('W2')],[g0('W1')-g0('W3'),g0('W2')]],k===0?R.geo.y0:0,R.geo.H,$('kc').value);
+    if($('kn').checked&&R.geo)knut3d(sg,[[0,0],[g0('W1'),0],[g0('W1'),g0('W2')],[g0('W1')-g0('W3'),g0('W2')]],k===0?R.geo.y0:0,pulpH(R.geo.H,{},k===Nm-1,g0('RW')),$('kc').value);
   }
   const wRxV=($('wRx')&&$('wRx').value.trim()),ext0=wRxV?Math.max(0,Math.min(parseFloat(wRxV)||0,12)):Math.max(0,Math.min(WB/2,g('RW')/2-.1));window.WEXT=ext0;
   (hus?WINGS:[]).forEach((w,i)=>{
@@ -299,7 +299,7 @@ function build3d(){
     if(gi.type==='c'){const sv=[M.stud,M.joist,M.metal],wm=new THREE.MeshLambertMaterial({color:$('gfc').value}),rm=new THREE.MeshLambertMaterial({color:$('grc').value});M.stud=M.joist=wm;M.metal=rm;try{carport3d(R,gg,gi);}finally{[M.stud,M.joist,M.metal]=sv;}}else
     part3d(R,{wing:true,gar:true,slab:true,noGrund:true,FL:gi.L,FW:gi.B,W1:gi.L,W2:gi.B,W3:gi.L,W4:gi.B,RL:gi.L,RW:gi.B,H2:gi.H,rext:0,plan:null,gops:gi.gops,noRoof:false,k:0,N:1,yoff:0},gg);
     mkHnd(gg,gi.L,1,gi.B/2,{t:'gar',k:'L',th:gi.th,ox:gi.ox,oz:gi.oz});mkHnd(gg,gi.L/2,1,gi.B,{t:'gar',k:'B',th:gi.th,ox:gi.ox,oz:gi.oz});
-    if(gi.type!=='c'&&$('gkn').checked)knut3d(gg,[[0,0],[gi.L,0],[gi.L,gi.B],[0,gi.B]],0,gi.H+.15,$('gkc').value);
+    if(gi.type!=='c'&&$('gkn').checked)knut3d(gg,[[0,0],[gi.L,0],[gi.L,gi.B],[0,gi.B]],0,pulpH(gi.H+.15,{gar:true},true,gi.B),$('gkc').value);
     capInfos().filter(c=>c.host==='g').forEach(c=>cap3d(R,gg,c));
     if(!hus&&R.fresh){
       const sz=Math.max(gi.L,gi.B,6),cxg=g0('gaX')+gi.bw/2,czg=g0('gaZ')+gi.bh/2;
@@ -746,12 +746,16 @@ function cap3d(R,parent,c){
   mkHnd(g,x0+L,H*.5,-D,Object.assign({k:'e'},hd));mkHnd(g,x0,H*.5,-D,Object.assign({k:'s'},hd));mkHnd(g,x0+L/2,.3,-D,Object.assign({k:'d'},hd));
   if(c.car){const cg=new THREE.Group();cg.position.set(x0,0,-D);g.add(cg);car3d(cg,L,D,.1);}
 }
-function knut3d(parent,ps,y0,H,col){
+function pulpH(H,o,top,RW){
+  const PU=roofIsPulpet(o),ex=PU&&top?Math.tan(g0('P')*Math.PI/180)*RW:0,hi=roofDir(o)===1?2:0;
+  return [0,1,2,3].map(c=>H+((c<2?0:2)===hi?ex:0));
+}
+function knut3d(parent,ps,y0,Hs,col){
   const key='k'+col;R3.kmat=R3.kmat||{};if(!R3.kmat[key])R3.kmat[key]=new THREE.MeshLambertMaterial({color:col});
   const mt=R3.kmat[key];
   ps.forEach((p0,i)=>{
     const g=new THREE.Group();g.position.set(p0[0],y0,p0[1]);g.rotation.y=[0,-Math.PI/2,Math.PI,Math.PI/2][i];parent.add(g);
-    const bx=(sx,sz,x,z)=>{const m=new THREE.Mesh(R3.box,mt);m.scale.set(sx,H,sz);m.position.set(x,H/2,z);g.add(m);};
+    const H=Hs[i],bx=(sx,sz,x,z)=>{const m=new THREE.Mesh(R3.box,mt);m.scale.set(sx,H,sz);m.position.set(x,H/2,z);g.add(m);};
     bx(.25,.09,-.005,-.085);bx(.09,.25,-.085,-.005);
   });
 }
