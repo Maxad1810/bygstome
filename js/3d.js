@@ -559,9 +559,9 @@ function part3d_(R,o,parent){
     for(let i=0;i<n;i++){
       const x=cx-RL/2+rw/2+i*(RL-rw)/(n-1),end=i===0||i===n-1,v=(y,z)=>new THREE.Vector3(x,y,z),ridge=v(base+tn*hsp,zr);
       if(!glu)beam(gT,v(base,cz-RW/2),v(base,cz+RW/2),rw,rh,M.stud);
-      [-1,1].forEach(q=>mk(gT,rw+.01,.12,.1,M.metal2).position.set(x,base+.02,cz+q*RW/2));
+      [-1,1].forEach(q=>mk(gT,rw+.01,.12,.1,M.metal2).position.set(x,base+.02,cz+q*(RW/2-.1)));
       sides.forEach(q=>{const ov=ovAt(q,x);beam(gT,v(base-tn*ov,cz+q*(RW/2+ov)),ridge,rw,rh,glu?M.limtra:M.stud);});
-      if(PU){const zl=cz-PD*RW/2,Bf=f=>v(base,zl+PD*RW*f),Tf=f=>v(base+tn*RW*f,zl+PD*RW*f);beam(gT,Bf(1),Tf(1),rw,rh,glu?M.limtra:M.stud);if(!glu&&!end){beam(gT,Bf(.5),Tf(.5),.045,.07,M.plate);beam(gT,Bf(.5),Tf(1),.045,.07,M.plate);}}
+      if(PU){const zl=cz-PD*RW/2,Bf=f=>v(base,zl+PD*RW*f),Tf=f=>v(base+tn*RW*f,zl+PD*RW*f);{const sh=new THREE.Vector3(0,0,-PD*(rh/2+.012));beam(gT,Bf(1).add(sh),Tf(1).add(sh),rw,rh,glu?M.limtra:M.stud);}if(!glu&&!end){beam(gT,Bf(.5),Tf(.5),.045,.07,M.plate);beam(gT,Bf(.5),Tf(1),.045,.07,M.plate);}}
       if(!glu&&!end&&!PU){const B1=v(base,cz-RW/6),B2=v(base,cz+RW/6),ML=v(base+tn*RW/4,cz-RW/4),MR=v(base+tn*RW/4,cz+RW/4);beam(gT,B1,ridge,.045,.07,M.plate);beam(gT,B2,ridge,.045,.07,M.plate);beam(gT,B1,ML,.045,.07,M.plate);beam(gT,B2,MR,.045,.07,M.plate);if(!isSimple())[B1,B2,ridge,ML,MR].forEach(p=>mk(gT,.052,.1,.1,M.metal).position.copy(p));}
       
       
