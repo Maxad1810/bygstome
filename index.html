@@ -88,7 +88,7 @@
 <label>Fasadfärg<input id="fc" type="color" value="#8a2f23" style="height:44px;padding:2px"></label>
 <label>Knutar (hörnbrädor)<input id="kc" type="color" value="#ecebe4" style="height:44px;padding:2px"></label>
 <label class="chk" style="align-self:end"><input type="checkbox" id="kn" checked> Visa knutar</label>
-<div id="fcSw" class="tools" style="grid-column:1/-1;margin:0"></div>
+<div id="fcSw" class="tools pal" data-pal="fc:Hus: fasad,kc:Hus: knutar,rcol:Hus: tak" style="grid-column:1/-1;margin:0"></div>
 <label>Fasadpanel<select id="pd"><option value="l" selected>Liggande panel</option><option value="s">Stående panel</option></select></label>
 </div></fieldset>
 <fieldset data-need="any"><legend>Virke</legend>
@@ -166,6 +166,7 @@
 <label>Höjd yttre kant (m)<input id="cpH" type="number" step="0.1" min="2" value="2.4"></label>
 <label>Golvnivå över mark (m)<input id="cpY" type="number" step="0.05" min="0" max="1.5" value="0"></label>
 </div>
+<div class="tools pal" data-pal="cpC:Carport: trä,cpR:Carport: tak" style="grid-column:1/-1;margin:0"></div>
 <label>Carport: färg på trä<input id="cpC" type="color" value="#8a2f23" style="height:44px;padding:2px"></label><label>Carport: takfärg<input id="cpR" type="color" value="#5f6e78" style="height:44px;padding:2px"></label>
 <label class="chk"><input type="checkbox" id="cpCar" checked> Visa en bil under carporten</label>
 <p class="note" style="margin:4px 0 0">Pulpettak (8°) som lutar bort från huset, med ledger mot väggen och stolpar längs ytterkanten.</p>
@@ -185,6 +186,7 @@
 <div style="margin:10px 0 4px;font-weight:600">Fönster, dörrar och portar</div>
 <div id="gaList"></div>
 <button type="button" id="gaAdd">+ Lägg till fönster, dörr eller port</button>
+<div class="tools pal" data-pal="gfc:Garage: fasad,gkc:Garage: knutar,grc:Garage: tak" style="margin:0 0 8px"></div>
 <div class="row"><label>Garage: fasadfärg<input id="gfc" type="color" value="#8a2f23" style="height:44px;padding:2px"></label><label>Garage: takfärg<input id="grc" type="color" value="#5f6e78" style="height:44px;padding:2px"></label></div>
 <div class="row"><label>Knutfärg<input id="gkc" type="color" value="#ecebe4" style="height:44px;padding:2px"></label><label class="chk" style="align-self:end"><input type="checkbox" id="gkn" checked> Visa knutar</label></div>
 <label class="chk" style="margin-top:8px"><input type="checkbox" id="gaI"> Isolerat och inklätt (gips)</label>
@@ -199,6 +201,7 @@
 <label>Höjd yttre kant (m)<input id="gcH" type="number" step="0.1" min="2" value="2.4"></label>
 <label>Golvnivå över mark (m)<input id="gcY" type="number" step="0.05" min="0" max="1.5" value="0"></label>
 </div>
+<div class="tools pal" data-pal="gcC:Carport: trä,gcR:Carport: tak" style="grid-column:1/-1;margin:0"></div>
 <label>Carport: färg på trä<input id="gcC" type="color" value="#8a2f23" style="height:44px;padding:2px"></label><label>Carport: takfärg<input id="gcR" type="color" value="#5f6e78" style="height:44px;padding:2px"></label>
 <label class="chk"><input type="checkbox" id="gcCar" checked> Visa en bil under carporten</label>
 </div>
