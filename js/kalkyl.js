@@ -507,7 +507,7 @@ function calcCore(o){
 /* ---------- Färger ---------- */
 const FC_PRESETS=[['Falu röd','#8a2f23'],['Vit','#f2f0ea'],['Ljusgrå','#b9bec0'],['Grafit','#3b4247'],['Gul','#d8b04a'],['Blå','#3e6a8a'],['Grön','#4f6b4c'],['Natur trä','#b0814f'],['Svart','#2b2e31'],['Plåtgrå','#5f6e78'],['Tegelröd','#8a4a35']];
 function mkPalette(box){
-  const T=box.dataset.pal.split(',').map(x=>x.split(':'));
+  const T=box.dataset.pal.split(',').map(x=>{const i=x.indexOf(':');return [x.slice(0,i),x.slice(i+1)];});
   T.forEach(([id])=>{const e=$(id),l=e&&e.closest('label');if(l)l.style.display='none';});
   const sel=document.createElement('select');sel.setAttribute('aria-label','Vad ska färgas');sel.style.cssText='flex:1 1 100%;min-height:44px';
   T.forEach(([id,n])=>{const o=document.createElement('option');o.value=id;o.textContent='Färga: '+n;sel.appendChild(o);});
