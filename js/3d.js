@@ -54,6 +54,16 @@ function bind3d(R){
     let lx,lz;
     if(h.t==='deck'||h.t==='balc'||(h.t==='cap'&&h.host==='h')){if(!G)return;const s0=G.ps[h.sd],dr=G.dirs[h.sd],dx=p.x-s0[0],dz=p.z-s0[1];lx=dx*dr[0]+dz*dr[1];lz=dz*dr[0]-dx*dr[1];}
     else{const dx=p.x-h.ox,dz=p.z-h.oz,c=Math.cos(h.th),s=Math.sin(h.th);lx=dx*c-dz*s;lz=dx*s+dz*c;}
+    if(h.t==='cap'&&h.k==='m'){
+      const isG=h.host==='g',gi=garageInfo();if(isG&&!gi)return;
+      const pp=isG?[lx,lz]:[p.x,p.z],pr=h.pre,L=g0(pr+'L');
+      const PS=isG?[[0,0],[gi.L,0],[gi.L,gi.B],[0,gi.B]]:[[0,0],[g0('W1'),0],[g0('W1'),g0('W2')],[g0('W1')-g0('W3'),g0('W2')]],WL=isG?[gi.L,gi.B,gi.L,gi.B]:[g0('W1'),g0('W2'),g0('W3'),g0('W4')],DR=[[1,0],[0,1],[-1,0],[0,-1]];
+      let best=null;
+      for(let i=0;i<4;i++){const dx=pp[0]-PS[i][0],dz=pp[1]-PS[i][1],t=Math.min(WL[i],Math.max(0,dx*DR[i][0]+dz*DR[i][1])),qx=PS[i][0]+DR[i][0]*t-pp[0],qz=PS[i][1]+DR[i][1]*t-pp[1],d=qx*qx+qz*qz;if(!best||d<best.d)best={i,t,d};}
+      const Lc=Math.min(L,WL[best.i]),X=Math.max(0,Math.min(WL[best.i]-Lc,Math.round((best.t-Lc/2)*10)/10));
+      $(pr+'S').value=String(best.i);$(pr+'X').value=String(X);if(Lc<L)$(pr+'L').value=String(Lc);
+      build3d();showTip('Carport flyttad till v\u00e4gg '+(best.i+1),e);return;
+    }
     if(h.t==='cap'&&h.host==='g'){const gi=garageInfo();if(!gi)return;const b0=[[0,0],[gi.L,0],[gi.L,gi.B],[0,gi.B]][h.sd],dr=[[1,0],[0,1],[-1,0],[0,-1]][h.sd],dx=lx-b0[0],dz=lz-b0[1];lx=dx*dr[0]+dz*dr[1];lz=dz*dr[0]-dx*dr[1];}
     if(!h.b){h.b={lx,lz,v:{cx:h.pre?g0(h.pre+'X'):0,cl:h.pre?g0(h.pre+'L'):0,cd:h.pre?g0(h.pre+'D'):0,dkL:g0('dkL'),dkX:g0('dkX'),dkD:g0('dkD'),bkX:g0('bkX'),bkL:g0('bkL'),bkD:g0('bkD'),gaL:g0('gaL'),gaB:g0('gaB'),GL:g0('GL'),GB:g0('GB'),rx:window.WEXT||0}};return;}
     const v=h.b.v,ax=lx-h.b.lx,az=lz-h.b.lz,r1=n=>Math.round(n*10)/10,r2=n=>Math.round(n*20)/20,f=n=>nf(n,1).replace(/ /g,' ')+' m';
@@ -760,7 +770,7 @@ function cap3d(R,parent,c){
   for(let x=x0+.05;x<=x0+L-.04;x+=.9)beam(g,new V3(x,yH(0),0),new V3(x,yH(-D-.2),-D-.2),.045,.145,MM.joist);
   beam(g,new V3(x0+L/2,yH(0)+.1,0),new V3(x0+L/2,yH(-D-.2)+.1,-D-.2),L+.4,.02,MM.metal);
   const hd={t:'cap',host:c.host,pre:c.pre,sd:c.w,ox:0,oz:0,th:0};
-  mkHnd(g,x0+L,H*.5,-D,Object.assign({k:'e'},hd));mkHnd(g,x0,H*.5,-D,Object.assign({k:'s'},hd));mkHnd(g,x0+L/2,.3,-D,Object.assign({k:'d'},hd));
+  mkHnd(g,x0+L,H*.5,-D,Object.assign({k:'e'},hd));mkHnd(g,x0,H*.5,-D,Object.assign({k:'s'},hd));mkHnd(g,x0+L/2,.3,-D,Object.assign({k:'d'},hd));mkHnd(g,x0+L/2,H+.5,-D/2,Object.assign({k:'m'},hd));
   if(c.car){const cg=new THREE.Group();cg.position.set(x0,0,-D);g.add(cg);car3d(cg,L,D,.1);}
 }
 function pulpH(H,o,top,RW){
