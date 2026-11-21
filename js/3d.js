@@ -752,7 +752,7 @@ function knut3d(parent,ps,y0,H,col){
   ps.forEach((p0,i)=>{
     const g=new THREE.Group();g.position.set(p0[0],y0,p0[1]);g.rotation.y=[0,-Math.PI/2,Math.PI,Math.PI/2][i];parent.add(g);
     const bx=(sx,sz,x,z)=>{const m=new THREE.Mesh(R3.box,mt);m.scale.set(sx,H,sz);m.position.set(x,H/2,z);g.add(m);};
-    bx(.125,.03,.0575,-.105);bx(.03,.09,-.105,-.06);
+    bx(.25,.09,-.005,-.085);bx(.09,.25,-.085,-.005);
   });
 }
 function carport3d(R,gg,gi){
