@@ -84,3 +84,5 @@ button.own:hover{color:var(--accent);border-color:var(--accent)}
 #prisBanner{margin:6px 0;padding:8px 10px;border-radius:4px;background:var(--soft);border-left:4px solid var(--accent)}
 .op.iw{grid-template-columns:repeat(4,minmax(0,1fr))}
 .op.iw input,.op.iw select{min-width:0;width:100%}
+
+.kl{width:100%;border-collapse:collapse;font-size:.85rem}.kl th,.kl td{padding:3px 6px;border-bottom:1px solid var(--line);text-align:right}.kl th:first-child,.kl td:first-child{text-align:left}

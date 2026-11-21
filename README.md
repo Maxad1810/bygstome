@@ -173,3 +173,6 @@ Garaget har egen fasadfärg och takfärg (i garagets fält). Carporten har egen 
 
 ## Taktyper
 Sadeltak, saxtakstol, mansardtak, ramverk, takåsar och pulpettak (snett tak) för både hus och garage. Mansardtaket ritas med knäck i 3D, fasader och sektion. Saxtakstol, ramverk och takåsar har samma yttre form som sadeltak men olika bärande konstruktion i 3D. Takåsar ger en egen rad i inköpslistan.
+
+## Kapplista
+Knappen "Visa kapplista" listar alla reglar, bjälkar, sparrar och fasadbrädor i 3D-modellen med dimension, kapad längd (i 5 mm-steg) och antal, och kan laddas ner som CSV för Excel. Listan följer modellen (hus, flyglar, garage och carport).

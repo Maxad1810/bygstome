@@ -208,6 +208,7 @@ function init3d(){
     const L=c=>new THREE.MeshLambertMaterial({color:c});
     const PO=(m,f)=>{m.polygonOffset=true;m.polygonOffsetFactor=-f;m.polygonOffsetUnits=-f;return m;};
     M={stud:L(0xe0b36a),plate:L(0xb5803c),hdr:L(0x9a6a2e),joist:L(0xd4a45c),floor:L(0xefe1bf),roof:new THREE.MeshLambertMaterial({color:0xb8741a,transparent:true,opacity:.5,depthWrite:false}),win:new THREE.MeshLambertMaterial({color:0x7ec8e8,transparent:true,opacity:.6}),door:new THREE.MeshLambertMaterial({color:0x6b3f1d}),sel:new THREE.MeshLambertMaterial({color:0xffd24a,transparent:true,opacity:.9}),metal:PO(L(0x5f6e78),2),metal2:PO(L(0x3f4a52),3),papp:PO(L(0x22262a),1),spont:L(0xcfa768),conc:L(0x9aa3a3),falu:L(0x8a2f23),frame:L(0xf1efe8),limtra:L(0xdcb872),cond:L(0xe8742a),deck:L(0x8f7348),pick:new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),hnd:new THREE.MeshBasicMaterial({color:0xff8a00,depthTest:false,transparent:true,opacity:.95})};
+    ['stud','joist','plate','limtra'].forEach(k=>{if(M[k])M[k].userData.timber=true;});
     R3={ren,sc,cam,root,ctl,draw,rs,fresh:true,box:BOX(),cyl:new THREE.CylinderGeometry(1,1,1,12),tex:{v:mkTex(true),h:mkTex(false)},pmat:{}};bind3d(R3);
   }catch(e){F3=true;$('c3d').innerHTML='<p class="note" style="padding:12px">3D-vyn stöds inte i den här webbläsaren.</p>';}
   return R3;
@@ -309,7 +310,7 @@ function build3d(){
   const gi=garageInfo();
   if(gi){
     const gg=new THREE.Group();R.root.add(gg);gg.rotation.y=gi.th;gg.position.set(gi.ox,0,gi.oz);
-    if(gi.type==='c'){const sv=[M.stud,M.joist,M.metal],wm=new THREE.MeshLambertMaterial({color:$('gfc').value}),rm=new THREE.MeshLambertMaterial({color:$('grc').value});M.stud=M.joist=wm;M.metal=rm;try{carport3d(R,gg,gi);}finally{[M.stud,M.joist,M.metal]=sv;}}else
+    if(gi.type==='c'){const sv=[M.stud,M.joist,M.metal],wm=(()=>{const q=new THREE.MeshLambertMaterial({color:$('gfc').value});q.userData.timber=true;return q;})(),rm=new THREE.MeshLambertMaterial({color:$('grc').value});M.stud=M.joist=wm;M.metal=rm;try{carport3d(R,gg,gi);}finally{[M.stud,M.joist,M.metal]=sv;}}else
     part3d(R,{wing:true,gar:true,slab:true,noGrund:true,FL:gi.L,FW:gi.B,W1:gi.L,W2:gi.B,W3:gi.L,W4:gi.B,RL:gi.L,RW:gi.B,H2:gi.H,rext:0,plan:null,gops:gi.gops,noRoof:false,k:0,N:1,yoff:0},gg);
     mkHnd(gg,gi.L,1,gi.B/2,{t:'gar',k:'L',th:gi.th,ox:gi.ox,oz:gi.oz});mkHnd(gg,gi.L/2,1,gi.B,{t:'gar',k:'B',th:gi.th,ox:gi.ox,oz:gi.oz});
     if(gi.type!=='c'&&$('gkn').checked)knut3d(gg,[[0,0],[gi.L,0],[gi.L,gi.B],[0,gi.B]],0,pulpH(gi.H+.15,{gar:true},true,gi.B),$('gkc').value);
@@ -757,7 +758,7 @@ function capFrame(c){
 }
 function cap3d(R,parent,c){
   const f=capFrame(c),g=new THREE.Group();g.position.set(f.p[0],c.lvl||0,f.p[1]);g.rotation.y=f.th;parent.add(g);
-  const wm=new THREE.MeshLambertMaterial({color:$(c.pre+'C').value}),rm=new THREE.MeshLambertMaterial({color:$(c.pre+'R').value});
+  const wm=new THREE.MeshLambertMaterial({color:$(c.pre+'C').value});wm.userData.timber=true;const rm=new THREE.MeshLambertMaterial({color:$(c.pre+'R').value});
   const MM={...M,stud:wm,joist:wm,metal:rm};
   const L=c.L,D=c.D,H=c.H,x0=c.x0,tn=Math.tan(8*Math.PI/180),rise=tn*D,V3=THREE.Vector3,zo=-D;
   const mkx=(sx,sy,sz,mat,x,y,z)=>{const m=new THREE.Mesh(R3.box,mat);m.scale.set(sx,sy,sz);m.position.set(x,y,z);g.add(m);return m;};
