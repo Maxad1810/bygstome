@@ -375,7 +375,7 @@ function calcOld(){
 function calcCore(o){
   const g=id=>(o&&o[id]!=null)?o[id]:g0(id);
   if(!o||!o.wing)sync();
-  const HL=g('L'),HW=g('W'),I=g('I'),cc=g('cc'),ccT=g('ccT'),P=g('P'),O=g('O'),sp=1+g('S')/100,dim=$('dim').value;
+  const HL=g('L'),HW=g('W'),I=g('I'),cc=g('cc'),ccT=g('ccT'),P=g('P'),O=(o&&o.gar)?g0('gaO'):g('O'),OG=(o&&o.gar)?g0('gaOG'):g('OG'),sp=1+g('S')/100,dim=$('dim').value;
   const ws=(o&&o.segs)||[g('W1'),g('W2'),g('W3'),g('W4')],H=g('H2'),per=ws.reduce((a,b)=>a+b,0);
   const L=g('RL'),W=g('RW');
   const FL=g('FL'),FW=g('FW'),jc=g('jc'),jd=$('jd').value;
@@ -403,7 +403,7 @@ function calcCore(o){
   const gips=Math.ceil(inA*sp/2.88);
   const ins=wallA*sp;
   // Tak
-  const rad=P*Math.PI/180,eaveL=L+((o&&o.wing&&!o.gar)?O:2*O),PU=roofIsPulpet(o),nSl=PU?1:2,slope=(PU?W+O:W/2+O)/Math.cos(rad);
+  const rad=P*Math.PI/180,eaveL=L+((o&&o.wing&&!o.gar)?OG:2*OG),PU=roofIsPulpet(o),nSl=PU?1:2,slope=(PU?W+O:W/2+O)/Math.cos(rad);
   const roofA=nSl*eaveL*slope;
   const trusses=Math.ceil(L/ccT)+1;
   const lath=roofA/0.3*sp;

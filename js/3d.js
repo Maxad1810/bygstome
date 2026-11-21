@@ -354,7 +354,7 @@ function part3d(R,o,parent){
 }
 function part3d_(R,o,parent){
   const isW=!!(o&&o.wing),g=id=>(o&&o[id]!=null)?o[id]:g0(id);
-  const RL=g('RL'),RW=g('RW'),FL=g('FL'),FW=g('FW'),jc=g('jc')||.6,cc=g('cc')||.6,P=g('P'),O=g('O'),ccT=g('ccT')||1.2,H=g('H2');
+  const RL=g('RL'),RW=g('RW'),FL=g('FL'),FW=g('FW'),jc=g('jc')||.6,cc=g('cc')||.6,P=g('P'),O=(o&&o.gar)?g0('gaO'):g('O'),OG=(o&&o.gar)?g0('gaOG'):g('OG'),ccT=g('ccT')||1.2,H=g('H2');
   const ws=[g('W1'),g('W2'),g('W3'),g('W4')];
   const PU=roofIsPulpet(o),PD=roofDir(o),tnP=Math.tan(P*Math.PI/180),hiExtra=PU&&!(o&&o.noRoof)?tnP*RW:0,hiWall=PD===1?2:0,wallH=i=>H+(i===hiWall?hiExtra:0);
   const jh=(parseInt($('jd').value.split('x')[1])||195)/1000,d=(parseInt($('dim').value.split('x')[1])||145)/1000,fo=($('gr').value==='p'&&!(o&&o.noGrund)?(g('ph')||.4)+jh:0),y0=(o&&o.slab)?.15:fo+jh+.022;
@@ -566,7 +566,7 @@ function part3d_(R,o,parent){
       
       
     }
-    const V=THREE.Vector3,eL=RL+2*O,co=Math.cos(P*Math.PI/180),si=Math.sin(P*Math.PI/180),sL=(RW/2+O)/co;
+    const V=THREE.Vector3,eL=RL+2*OG,co=Math.cos(P*Math.PI/180),si=Math.sin(P*Math.PI/180),sL=(RW/2+O)/co;
     const xs0=isW?Math.max(cx-eL/2,0):cx-eL/2;
     const dpN=Math.max(2,Math.ceil(2*eL/10)),px=(p,x)=>{const q=p.clone();q.x=x;return q;};
     if(glu)mk(gT,eL,rh,rw,M.limtra).position.set(cx,base+tn*hsp-rh*.35,zr);
