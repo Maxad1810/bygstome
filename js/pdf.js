@@ -356,10 +356,10 @@ function pdfElevCell(doc,cfg,w,cx0,cy0,cellW,cellH,sc,title){
     doc.setFillColor(150,115,70);doc.setDrawColor(60);doc.setLineWidth(.2);
     const np=Math.ceil(ws[w]/3)+1;for(let i=0;i<np;i++){const x=np===1?ws[w]/2:.15+i*(ws[w]-.3)/(np-1);doc.rect(X(x-.0475),Y(Htot-.1),.095*sc,(Htot-.1)*sc,'FD');}
   }else{
-  doc.setFillColor(...(AR?[255,255,255]:hexRgb($('fc').value)));doc.setDrawColor(AR?0:40);doc.setLineWidth(AR?.4:.3);
+  doc.setFillColor(...(AR?[255,255,255]:hexRgb(cfg.fc||$('fc').value)));doc.setDrawColor(AR?0:40);doc.setLineWidth(AR?.4:.3);
   doc.rect(X(0),Y(HT),ws[w]*sc,(HT-yb)*sc,'FD');
   // panellinjer
-  doc.setDrawColor(...(AR?[120,120,120]:hexShade($('fc').value,.8)));doc.setLineWidth(AR?.06:.05);
+  doc.setDrawColor(...(AR?[120,120,120]:hexShade(cfg.fc||$('fc').value,.8)));doc.setLineWidth(AR?.06:.05);
   if(cfg.panelStd){for(let x=.12;x<ws[w];x+=.12)doc.line(X(x),Y(HT),X(x),Y(yb));}
   else{for(let y=yb+.12;y<HT;y+=.12)doc.line(X(0),Y(y),X(ws[w]),Y(y));}
   }
@@ -381,7 +381,7 @@ function pdfElevCell(doc,cfg,w,cx0,cy0,cellW,cellH,sc,title){
       }
     }else{
       const hr=(w===1&&PUe.dir===1)||(w===3&&PUe.dir===-1),a=hr?-O:ws[w]+O,b=hr?ws[w]:0;
-      doc.setFillColor(...(AR?[255,255,255]:hexRgb($('fc').value)));doc.setDrawColor(AR?0:40);doc.setLineWidth(AR?.4:.3);
+      doc.setFillColor(...(AR?[255,255,255]:hexRgb(cfg.fc||$('fc').value)));doc.setDrawColor(AR?0:40);doc.setLineWidth(AR?.4:.3);
       pdfPoly(doc,[[0,Htot],[ws[w],Htot],[b,ridge]],(x,y)=>[X(x),Y(y)],'FD');
       doc.setFillColor(...(AR?[255,255,255]:rc));
       pdfPoly(doc,[[a,Htot-tn*O],[b,ridge],[b,ridge+.1],[a,Htot-tn*O+.1]],(x,y)=>[X(x),Y(y)],'FD');
@@ -614,7 +614,7 @@ function pdfBuild(){
   const names=['Framsida (v\u00e4gg 1)','H\u00f6ger sida (v\u00e4gg 2)','Baksida (v\u00e4gg 3)','V\u00e4nster sida (v\u00e4gg 4)'];
   if(hus)pdfElevPage(doc,head,houseCfg,'Fasader \u2013 hus',names,PW,PH,M0);
   if(gi){
-    const gPU=gi.type!=='c'&&roofIsPulpet({wing:true,gar:true}),gH=.15+gi.H,gcfg={pu:gPU?{dir:roofDir({gar:true})}:null,ws:[gi.L,gi.B,gi.L,gi.B],Htot:gH,ridge:gH+tn*gi.B*(gPU?1:.5),O:O_,tn,RW:gi.B,kn:$('gkn').checked?$('gkc').value:null,caps:capInfos().filter(c=>c.host==='g'),gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,
+    const gPU=gi.type!=='c'&&roofIsPulpet({wing:true,gar:true}),gH=.15+gi.H,gcfg={pu:gPU?{dir:roofDir({gar:true})}:null,ws:[gi.L,gi.B,gi.L,gi.B],Htot:gH,ridge:gH+tn*gi.B*(gPU?1:.5),O:O_,tn,RW:gi.B,fc:$('gfc').value,kn:$('gkn').checked?$('gkc').value:null,caps:capInfos().filter(c=>c.host==='g'),gable:[false,true,false,true],floors:[],levels:[.15],yFloor:()=>.15,
       ops:olist.filter(o=>o.grp==='Garage'),plinth:0,bodyBottom:0,panelStd:$('pd').value==='s',deck:null,ghost:gi.type==='c'};
     if(gi.type==='c'){gcfg.gable=[false,false,false,false];gcfg.ridge=gcfg.Htot+.12;}
     pdfElevPage(doc,head,gcfg,'Fasader \u2013 '+GN().toLowerCase(),['Garage: l\u00e5ngsida (v\u00e4gg 1)','Garage: gavel med port (v\u00e4gg 2)','Garage: l\u00e5ngsida (v\u00e4gg 3)','Garage: gavel (v\u00e4gg 4)'],PW,PH,M0);

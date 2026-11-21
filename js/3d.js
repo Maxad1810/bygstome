@@ -169,7 +169,7 @@ function mkTex(vert,hex){
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;
 }
 function panelMat(w,h,std){
-  const fcv=$('fc').value;
+  const fcv=R3.fcOv||$('fc').value;
   if(R3.texColor!==fcv){R3.tex={v:mkTex(true,fcv),h:mkTex(false,fcv)};R3.pmat={};R3.texColor=fcv;}
   const rx=std?Math.max(1,Math.round(w/.12)):1,ry=std?1:Math.max(1,Math.round(h/.12)),key=(std?'s':'l')+rx+'x'+ry;
   if(!R3.pmat[key]){
@@ -296,7 +296,7 @@ function build3d(){
   const gi=garageInfo();
   if(gi){
     const gg=new THREE.Group();R.root.add(gg);gg.rotation.y=gi.th;gg.position.set(gi.ox,0,gi.oz);
-    if(gi.type==='c')carport3d(R,gg,gi);else
+    if(gi.type==='c'){const sv=[M.stud,M.joist,M.metal],wm=new THREE.MeshLambertMaterial({color:$('gfc').value}),rm=new THREE.MeshLambertMaterial({color:$('grc').value});M.stud=M.joist=wm;M.metal=rm;try{carport3d(R,gg,gi);}finally{[M.stud,M.joist,M.metal]=sv;}}else
     part3d(R,{wing:true,gar:true,slab:true,noGrund:true,FL:gi.L,FW:gi.B,W1:gi.L,W2:gi.B,W3:gi.L,W4:gi.B,RL:gi.L,RW:gi.B,H2:gi.H,rext:0,plan:null,gops:gi.gops,noRoof:false,k:0,N:1,yoff:0},gg);
     mkHnd(gg,gi.L,1,gi.B/2,{t:'gar',k:'L',th:gi.th,ox:gi.ox,oz:gi.oz});mkHnd(gg,gi.L/2,1,gi.B,{t:'gar',k:'B',th:gi.th,ox:gi.ox,oz:gi.oz});
     if(gi.type!=='c'&&$('gkn').checked)knut3d(gg,[[0,0],[gi.L,0],[gi.L,gi.B],[0,gi.B]],0,gi.H+.15,$('gkc').value);
@@ -347,6 +347,12 @@ function build3dOld(){
 function roofIsPulpet(o){const ga=o&&o.gar;if(o&&o.wing&&!ga)return false;const e=$(ga?'gaRt':'rtyp');return !!e&&e.value==='p';}
 function roofDir(o){const e=$((o&&o.gar)?'gaRd':'rdir');return e&&e.value==='f'?-1:1;}
 function part3d(R,o,parent){
+  if(!(o&&o.gar))return part3d_(R,o,parent);
+  const sv=M.metal;R3.gMetal=R3.gMetal||new THREE.MeshLambertMaterial({color:0x5f6e78,side:sv.side});R3.gMetal.color.set($('grc').value);
+  M.metal=R3.gMetal;R3.fcOv=$('gfc').value;
+  try{return part3d_(R,o,parent);}finally{M.metal=sv;R3.fcOv=null;}
+}
+function part3d_(R,o,parent){
   const isW=!!(o&&o.wing),g=id=>(o&&o[id]!=null)?o[id]:g0(id);
   const RL=g('RL'),RW=g('RW'),FL=g('FL'),FW=g('FW'),jc=g('jc')||.6,cc=g('cc')||.6,P=g('P'),O=g('O'),ccT=g('ccT')||1.2,H=g('H2');
   const ws=[g('W1'),g('W2'),g('W3'),g('W4')];
@@ -724,16 +730,18 @@ function capFrame(c){
 }
 function cap3d(R,parent,c){
   const f=capFrame(c),g=new THREE.Group();g.position.set(f.p[0],c.lvl||0,f.p[1]);g.rotation.y=f.th;parent.add(g);
+  const wm=new THREE.MeshLambertMaterial({color:$(c.pre+'C').value}),rm=new THREE.MeshLambertMaterial({color:$(c.pre+'R').value});
+  const MM={...M,stud:wm,joist:wm,metal:rm};
   const L=c.L,D=c.D,H=c.H,x0=c.x0,tn=Math.tan(8*Math.PI/180),rise=tn*D,V3=THREE.Vector3,zo=-D;
   const mkx=(sx,sy,sz,mat,x,y,z)=>{const m=new THREE.Mesh(R3.box,mat);m.scale.set(sx,sy,sz);m.position.set(x,y,z);g.add(m);return m;};
-  mkx(L+.2,.1,D,M.conc,x0+L/2,.05,-D/2);
+  mkx(L+.2,.1,D,MM.conc,x0+L/2,.05,-D/2);
   const n=Math.ceil(L/3)+1;
-  for(let i=0;i<n;i++)mkx(.095,H,.095,M.stud,x0+.1+i*(L-.2)/(n-1),.1+H/2,zo+.1);
-  mkx(L,.195,.09,M.joist,x0+L/2,.1+H-.0975,zo+.1);
+  for(let i=0;i<n;i++)mkx(.095,H,.095,MM.stud,x0+.1+i*(L-.2)/(n-1),.1+H/2,zo+.1);
+  mkx(L,.195,.09,MM.joist,x0+L/2,.1+H-.0975,zo+.1);
   const yH=zz=>.1+H+rise*(1+zz/D)+.1-.0;      // höjd på takets ovansida vid z
-  mkx(L,.195,.09,M.joist,x0+L/2,.1+H+rise-.0975,-.045);
-  for(let x=x0+.05;x<=x0+L-.04;x+=.9)beam(g,new V3(x,yH(0),0),new V3(x,yH(-D-.2),-D-.2),.045,.145,M.joist);
-  beam(g,new V3(x0+L/2,yH(0)+.1,0),new V3(x0+L/2,yH(-D-.2)+.1,-D-.2),L+.4,.02,M.metal);
+  mkx(L,.195,.09,MM.joist,x0+L/2,.1+H+rise-.0975,-.045);
+  for(let x=x0+.05;x<=x0+L-.04;x+=.9)beam(g,new V3(x,yH(0),0),new V3(x,yH(-D-.2),-D-.2),.045,.145,MM.joist);
+  beam(g,new V3(x0+L/2,yH(0)+.1,0),new V3(x0+L/2,yH(-D-.2)+.1,-D-.2),L+.4,.02,MM.metal);
   const hd={t:'cap',host:c.host,pre:c.pre,sd:c.w,ox:0,oz:0,th:0};
   mkHnd(g,x0+L,H*.5,-D,Object.assign({k:'e'},hd));mkHnd(g,x0,H*.5,-D,Object.assign({k:'s'},hd));mkHnd(g,x0+L/2,.3,-D,Object.assign({k:'d'},hd));
   if(c.car){const cg=new THREE.Group();cg.position.set(x0,0,-D);g.add(cg);car3d(cg,L,D,.1);}

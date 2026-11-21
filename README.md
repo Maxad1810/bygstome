@@ -167,3 +167,6 @@ Bocka i "Carport vid huset" eller "Lägg till carport vid byggnaden" i garagets 
 
 ## Knutar
 Välj färg på knutarna (hörnbrädorna) för huset under Fasadfärg och för garaget i garagets fält. De syns i 3D och i fasadritningarna och kan stängas av.
+
+## Egna färger på garage och carport
+Garaget har egen fasadfärg och takfärg (i garagets fält). Carporten har egen färg på trä och tak, både vid huset och vid garaget.
