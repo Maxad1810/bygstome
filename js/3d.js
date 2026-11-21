@@ -807,3 +807,20 @@ function carport3d(R,gg,gi){
   beam(g,new V3(L/2,yz(-.15)+.1,-.15),new V3(L/2,yz(B+.15)+.1,B+.15),L+.4,.02,M.metal);
   const pk=mkx(L,.6,B,M.pick,L/2,.3,B/2);pk.userData.garage=true;R.pick.push(pk);
 }
+
+/* Vrid kameran mot den vägg där altan, balkong eller carport sitter (vid ikryssning eller byte av vägg). */
+function viewWall(i,hostG){
+  try{
+    const G=R3&&R3.geo;if(!G||!R3.cam)return;
+    const ps=G.ps[i],dr=G.dirs[i],wl=G.ws[i],nx=dr[1],nz=-dr[0],cx=ps[0]+dr[0]*wl/2,cz=ps[1]+dr[1]*wl/2,size=Math.max(G.ws[0],G.ws[1],6),d=size*1.15,tgt=R3.ctl?R3.ctl.target:null,ty=(G.y0+G.H)*Math.max(1,mcount())/2;
+    R3.cam.position.set(cx+nx*d+dr[0]*d*.25,size*.75,cz+nz*d+dr[1]*d*.25);
+    if(R3.ctl){R3.ctl.target.set(cx,ty,cz);R3.ctl.update();}else R3.cam.lookAt(cx,ty,cz);
+    R3.rs&&R3.rs();
+  }catch(e){}
+}
+document.addEventListener('change',e=>{
+  const id=e.target&&e.target.id,on=e.target&&e.target.checked;
+  const m={bk:'bkS',dk:'dkS',cp:'cpS'};
+  if(m[id]&&on){setTimeout(()=>viewWall(parseInt($(m[id]).value)||0),250);}
+  if(['bkS','dkS','cpS'].includes(id)){const c={bkS:'bk',dkS:'dk',cpS:'cp'}[id];if($(c)&&$(c).checked)setTimeout(()=>viewWall(parseInt(e.target.value)||0),250);}
+});
