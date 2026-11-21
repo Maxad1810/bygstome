@@ -600,12 +600,12 @@ function part3d_(R,o,parent){
         const xc=(sg.a+sg.b)/2,len=sg.b-sg.a,Os=sg.ov;
         let E=new V(xc,base-tE*Os,zr+s*(hsp+Os));const Rg=MA?new V(xc,base+hK,zr+s*(hsp-a1)):new V(xc,base+hR,zr);
         if(isW&&!(o&&o.gar)&&sg.b<=.001){const f=Math.max(0,1-2*Math.abs(xc)/RW);if(f<=.03)return;E=new V(xc,base+tn*(RW/2)*(1-f),cz+s*RW/2*f);}   // vingtaket i huvudtakets vind: bara ner till skärningen mot huvudtaket
-        const coA=MA?coL:co,nvA=MA?nvL:nv,at=(p,off)=>p===Rg?new V(xc,Rg.y+(off+rof)/coA,Rg.z):p.clone().addScaledVector(nvA,off+rof);
+        const coA=MA?coL:co,nvA=MA?nvL:nv,Kd=off=>{const d=off+rof,Az=Rg.z+nvL.z*d,Ay=Rg.y+nvL.y*d,dz1=-s*coL,dy1=siL,Bz=zr,By=base+hR+d/co,dz2=Rg.z-zr,dy2=Rg.y-(base+hR),det=-dz1*dy2+dz2*dy1;if(Math.abs(det)<1e-6)return new V(xc,Rg.y+d/coA,Rg.z);const t=(-(Bz-Az)*dy2+dz2*(By-Ay))/det;return new V(xc,Ay+t*dy1,Az+t*dz1);},at=(p,off)=>p===Rg?(MA?Kd(off):new V(xc,Rg.y+(off+rof)/coA,Rg.z)):p.clone().addScaledVector(nvA,off+rof);
         beam(gR,at(E,.0835),at(Rg,.0835),len,.022,M.spont);
         beam(gP,at(E,.0965),at(Rg,.0965),len,.004,M.papp);
         const nS=Math.max(1,Math.ceil(len/1.0)),w=len/nS;
         for(let i=0;i<nS;i++){const x=sg.a+w*(i+.5);beam(gS,px(at(E,.1045),x),px(at(Rg,.1045),x),w-.012,.012,M.metal);for(let r=0;r<(isSimple()?0:5);r++){const rx=x-w/2+.012+(r+.5)*(w-.024)/5;beam(gS,px(at(E,.116),rx),px(at(Rg,.116),rx),.03,.012,M.metal2);}}
-        if(MA){const K2=new V(xc,Rg.y,Rg.z),R2=new V(xc,base+hR,zr),at2=(p,off)=>p===R2?new V(xc,R2.y+(off+rof)/co,zr):p.clone().addScaledVector(nv,off+rof);
+        if(MA){const K2=new V(xc,Rg.y,Rg.z),R2=new V(xc,base+hR,zr),at2=(p,off)=>p===R2?new V(xc,R2.y+(off+rof)/co,zr):(p===K2?Kd(off):p.clone().addScaledVector(nv,off+rof));
           beam(gR,at2(K2,.0835),at2(R2,.0835),len,.022,M.spont);beam(gP,at2(K2,.0965),at2(R2,.0965),len,.004,M.papp);
           for(let i=0;i<nS;i++){const x=sg.a+w*(i+.5);beam(gS,px(at2(K2,.1045),x),px(at2(R2,.1045),x),w-.012,.012,M.metal);}}
         if(Os<=0)return;
