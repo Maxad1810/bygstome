@@ -504,13 +504,27 @@ function calcCore(o){
 }
 
 /* ---------- Färger ---------- */
-const FC_PRESETS=[['Falu röd','#8a2f23'],['Vit','#f2f0ea'],['Ljusgrå','#b9bec0'],['Grafit','#3b4247'],['Gul','#d8b04a'],['Blå','#3e6a8a'],['Grön','#4f6b4c'],['Natur trä','#b0814f']];
-FC_PRESETS.forEach(([n,c])=>{
-  const b=document.createElement('button');b.type='button';b.title=n;b.setAttribute('aria-label','Fasadfärg '+n);
-  b.style.cssText='width:44px;min-height:44px;flex:0 0 44px;padding:0;border:2px solid var(--line);border-radius:50%;background:'+c;
-  b.onclick=()=>{const e=$('fc');e.value=c;e.dispatchEvent(new Event('input',{bubbles:true}));};
-  $('fcSw').appendChild(b);
-});
+const FC_PRESETS=[['Falu röd','#8a2f23'],['Vit','#f2f0ea'],['Ljusgrå','#b9bec0'],['Grafit','#3b4247'],['Gul','#d8b04a'],['Blå','#3e6a8a'],['Grön','#4f6b4c'],['Natur trä','#b0814f'],['Svart','#2b2e31'],['Plåtgrå','#5f6e78'],['Tegelröd','#8a4a35']];
+const FC_TARGETS=[['fc','Hus: fasad'],['kc','Hus: knutar'],['rcol','Hus: tak'],['gfc','Garage: fasad'],['gkc','Garage: knutar'],['grc','Garage: tak'],['cpC','Carport vid hus: trä'],['cpR','Carport vid hus: tak'],['gcC','Carport vid garage: trä'],['gcR','Carport vid garage: tak']];
+(function(){
+  const box=$('fcSw');if(!box)return;
+  FC_TARGETS.forEach(([id])=>{const e=$(id),l=e&&e.closest('label');if(l)l.style.display='none';});
+  const sel=document.createElement('select');sel.id='fcT';sel.setAttribute('aria-label','Vad ska färgas');sel.style.cssText='flex:1 1 100%;min-height:44px';
+  FC_TARGETS.forEach(([id,n])=>{const o=document.createElement('option');o.value=id;o.textContent='Färga: '+n;sel.appendChild(o);});
+  box.appendChild(sel);
+  const cur=()=>$(sel.value),btns=[];
+  const mark=()=>{const v=(cur().value||'').toLowerCase();btns.forEach(([b,c])=>{b.style.borderColor=c.toLowerCase()===v?'var(--accent,#e0a040)':'var(--line)';});};
+  const setC=c=>{const e=cur();e.value=c;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));mark();};
+  FC_PRESETS.forEach(([n,c])=>{
+    const b=document.createElement('button');b.type='button';b.title=n;b.setAttribute('aria-label','Färg '+n);
+    b.style.cssText='width:44px;min-height:44px;flex:0 0 44px;padding:0;border:3px solid var(--line);border-radius:50%;background:'+c;
+    b.onclick=()=>setC(c);box.appendChild(b);btns.push([b,c]);
+  });
+  const cu=document.createElement('input');cu.type='color';cu.title='Egen färg';cu.setAttribute('aria-label','Egen färg');cu.style.cssText='width:44px;height:44px;flex:0 0 44px;padding:0;border-radius:50%';
+  cu.oninput=()=>setC(cu.value);box.appendChild(cu);
+  sel.onchange=()=>{cu.value=cur().value;mark();};
+  document.addEventListener('input',mark);sel.onchange();
+})();
 function hexRgb(h){const m=/^#?([0-9a-f]{6})$/i.exec(h||'');const v=m?parseInt(m[1],16):0x8a2f23;return [(v>>16)&255,(v>>8)&255,v&255];}
 function hexShade(h,f){return hexRgb(h).map(v=>Math.max(0,Math.min(255,Math.round(v*f))));}
 
