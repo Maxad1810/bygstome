@@ -25,7 +25,7 @@ const RULES=[
  [/^Snörasskydd, rör/,'st',()=>149],[/^Snörasskyddskonsoler/,'st',()=>59],[/^Ändlock/,'st',()=>15],
  [/^Hängrännor/,'st',()=>129],[/^Rännkrokar/,'st',()=>22],[/^Stuprör/,'st',()=>149],[/^Utlopp/,'st',()=>79],
  [/^Eluttag/,'st',()=>69],[/^Strömbrytare/,'st',()=>59],[/^Taklamputtag/,'st',()=>39],[/^Lamputtag/,'st',()=>39],[/^Elcentral/,'st',()=>1490],[/^Matarkabel/,'m',()=>85],
- [/^Ankarbult/,'st',()=>22],[/^Innerdörr/,'st',()=>1500],[/^Garageport/,'st',()=>9900],[/^Dränerande/,'m3',()=>450],[/^Cellplast/,'m²',()=>120],[/^Armeringsnät/,'m²',()=>35],[/^Betong/,'m3',()=>1800],[/^Kantelement/,'m',()=>25],[/^Däcksplank/,'m',()=>28],[/^Däckskruv/,'st',()=>.5],[/^Räckesstolpar/,'st',()=>99],[/^Trappsteg/,'m',()=>28],[/^Apparatdosa/,'st',()=>12],
+ [/^Ankarbult/,'st',()=>22],[/^Takåsar/,'lm',()=>62],[/^Innerdörr/,'st',()=>1500],[/^Garageport/,'st',()=>9900],[/^Dränerande/,'m3',()=>450],[/^Cellplast/,'m²',()=>120],[/^Armeringsnät/,'m²',()=>35],[/^Betong/,'m3',()=>1800],[/^Kantelement/,'m',()=>25],[/^Däcksplank/,'m',()=>28],[/^Däckskruv/,'st',()=>.5],[/^Räckesstolpar/,'st',()=>99],[/^Trappsteg/,'m',()=>28],[/^Apparatdosa/,'st',()=>12],
  [/^Kabel 3G2/,'m',()=>17],[/^Kabel 3G1/,'m',()=>11],[/^Installationsrör/,'m',()=>9],[/^Kabelklammor/,'st',()=>.6]
 ];
 function bmQ(name){

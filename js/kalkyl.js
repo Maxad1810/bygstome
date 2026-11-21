@@ -403,9 +403,9 @@ function calcCore(o){
   const gips=Math.ceil(inA*sp/2.88);
   const ins=wallA*sp;
   // Tak
-  const rad=P*Math.PI/180,eaveL=L+((o&&o.wing&&!o.gar)?OG:2*OG),PU=roofIsPulpet(o),nSl=PU?1:2,slope=(PU?W+O+((o&&o.gar)?g0('gaOT'):g('OT')):W/2+O)/Math.cos(rad);
+  const rad=P*Math.PI/180,eaveL=L+((o&&o.wing&&!o.gar)?OG:2*OG),PU=roofIsPulpet(o),nSl=PU?1:2,RK=roofKind(o),MA=RK==='m'&&!PU,a1=MA?.3*W/2:0,slope=MA?(a1+O*.4226)/.4226+(W/2-a1)/Math.cos(rad):(PU?W+O+((o&&o.gar)?g0('gaOT'):g('OT')):W/2+O)/Math.cos(rad);
   const roofA=nSl*eaveL*slope;
-  const trusses=Math.ceil(L/ccT)+1;
+  const trusses=RK==='a'&&!PU?2:Math.ceil(L/ccT)+1;
   const lath=roofA/0.3*sp;
   const pc=Math.ceil,rows=pc(slope/.3)+1,strCnt=pc(eaveL/.6)+1;
   const strM=nSl*strCnt*slope*sp,latM=nSl*rows*eaveL*sp;
@@ -444,7 +444,8 @@ function calcCore(o){
     ['Sparrbeslag/balkskor',nf(rafN*2)+' st','ett i vardera änden'],
     ...((parseInt($('hNS').value)||0)>0?(()=>{const nS=parseInt($('hNS').value)||0,hp=H+Math.tan(P*Math.PI/180)*(PU?W:W/2);return [['Stolpar 95x95 (nockstöd)',nf(nS)+' st','längd '+nf(hp,1)+' m'],['Plintar (nockstöd)',nf(nS)+' st','under varje stöd']];})():[])
   ]:[
-    [(PU?'Takstolar, snett tak ':'Takstolar ')+rdim,nf(trusses)+' st','spännvidd '+nf(W,1)+' m · c/c '+nf(ccT,1)+' m'],
+    [(PU?'Takstolar, snett tak ':({x:'Saxtakstolar ',m:'Takstolar, mansard ',r:'Ramverk ',a:'Gavelstolar (takåsar) '}[RK]||'Takstolar '))+rdim,nf(trusses)+' st','spännvidd '+nf(W,1)+' m · c/c '+nf(ccT,1)+' m'],
+    ...(RK==='a'&&!PU?[['Takåsar 70x195',nf(Math.ceil(5*(L+.2)/4.8))+' st','à 4,8 m · '+nf(5*(L+.2),1)+' m, tre åsar på ena sidan och två på andra (inkl. nock)']]:[]),
     ['Takstolsbeslag',nf(trusses*2)+' st','2 per takstol']
   ];
   const sec=[

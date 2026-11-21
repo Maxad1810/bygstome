@@ -170,3 +170,6 @@ Välj färg på knutarna (hörnbrädorna) för huset under Fasadfärg och för g
 
 ## Egna färger på garage och carport
 Garaget har egen fasadfärg och takfärg (i garagets fält). Carporten har egen färg på trä och tak, både vid huset och vid garaget.
+
+## Taktyper
+Sadeltak, saxtakstol, mansardtak, ramverk, takåsar och pulpettak (snett tak) för både hus och garage. Mansardtaket ritas med knäck i 3D, fasader och sektion. Saxtakstol, ramverk och takåsar har samma yttre form som sadeltak men olika bärande konstruktion i 3D. Takåsar ger en egen rad i inköpslistan.

@@ -344,6 +344,7 @@ function build3dOld(){
   }
   R.draw();
 }
+function roofKind(o){if(o&&o.wing&&!o.gar)return 's';const e=$(o&&o.gar?'gaRt':'rtyp');return e?e.value:'s';}
 function roofIsPulpet(o){const ga=o&&o.gar;if(o&&o.wing&&!ga)return false;const e=$(ga?'gaRt':'rtyp');return !!e&&e.value==='p';}
 function roofDir(o){const e=$((o&&o.gar)?'gaRd':'rdir');return e&&e.value==='f'?-1:1;}
 function part3d(R,o,parent){
@@ -552,53 +553,61 @@ function part3d_(R,o,parent){
   const cx=(mnX+mxX)/2-((o&&o.rext)||0)/2,cz=(mnZ+mxZ)/2;
   // Tak
   const base=y0+H,tn=Math.tan(P*Math.PI/180),OT=PU?((o&&o.gar)?g0('gaOT'):g('OT')):0,hsp=PU?RW+OT:RW/2,zr=PU?cz+PD*(RW/2+OT):cz,sides=PU?[-PD]:[-1,1];
+  const RK=roofKind(o),MA=RK==='m'&&!PU,tL=Math.tan(65*Math.PI/180),coL=Math.cos(65*Math.PI/180),siL=Math.sin(65*Math.PI/180),a1=MA?.3*hsp:0,hK=a1*tL,hg=d=>MA?(d<=a1?d*tL:hK+(d-a1)*tn):tn*d,hR=hg(hsp),tE=MA?tL:tn;
   if(RL>0&&RW>0&&!(o&&o.noRoof)){
     const glu=$('rt').value==='g',[rw,rh]=$('rd').value.split('x').map(v=>parseInt(v)/1000),rof=rh/2-.0725;
     const WBg=g0('GB'),ovAt=(sd,x)=>isW?(x<0&&!(o&&o.gar)?0:O):(WINGS.some(w=>w.s===(sd<0?'f':'b')&&x>w.x0&&x<w.x0+WBg)?0:O);
     const n=Math.max(2,Math.ceil(RL/ccT)+1);
     for(let i=0;i<n;i++){
-      const x=cx-RL/2+rw/2+i*(RL-rw)/(n-1),end=i===0||i===n-1,v=(y,z)=>new THREE.Vector3(x,y,z),ridge=v(base+tn*hsp,zr);
-      if(!glu)beam(gT,v(base,cz-RW/2),v(base,cz+RW/2),rw,rh,M.stud);
+      const x=cx-RL/2+rw/2+i*(RL-rw)/(n-1),end=i===0||i===n-1,v=(y,z)=>new THREE.Vector3(x,y,z),ridge=v(base+hR,zr),asr=RK==='a'&&!PU&&!end;
+      if(!glu&&RK!=='x'&&!asr)beam(gT,v(base,cz-RW/2),v(base,cz+RW/2),rw,rh,M.stud);
+      if(RK==='x'&&!PU){const yc=base+hR*.5,Cc=v(yc,cz);[-1,1].forEach(q=>beam(gT,v(base,cz+q*RW/2),Cc,rw,rh,glu?M.limtra:M.stud));if(!end){beam(gT,Cc,ridge,.045,.07,M.plate);[-1,1].forEach(q=>beam(gT,v(base+hR*.25,cz+q*RW/4),ridge,.045,.07,M.plate));}}
       [-1,1].forEach(q=>mk(gT,rw+.01,.12,.1,M.metal2).position.set(x,base+.02,cz+q*(RW/2-.1)));
-      sides.forEach(q=>{const ov=ovAt(q,x);beam(gT,v(base-tn*ov,cz+q*(RW/2+ov)),ridge,rw,rh,glu?M.limtra:M.stud);});
+      if(!asr)sides.forEach(q=>{const ov=ovAt(q,x),Ev=v(base-tE*ov,cz+q*(RW/2+ov)),mt=glu?M.limtra:M.stud;if(MA){const Kv=v(base+hK,cz+q*(RW/2-a1));beam(gT,Ev,Kv,rw,rh,mt);beam(gT,Kv,ridge,rw,rh,mt);}else beam(gT,Ev,ridge,rw,rh,mt);});
+      if(MA){const zk=RW/2-a1,yk=base+hK;beam(gT,v(yk,cz-zk),v(yk,cz+zk),.045,.07,M.plate);[-1,1].forEach(q=>beam(gT,v(base,cz+q*zk),v(yk,cz+q*zk),.045,.07,M.plate));if(!end)beam(gT,v(yk,cz),ridge,.045,.07,M.plate);}
+      if(RK==='r'&&!PU){const yc=base+hR*.62,zc=RW/2*(1-.62),dp=RW*.22;beam(gT,v(yc,cz-zc),v(yc,cz+zc),.045,.145,M.stud);[-1,1].forEach(q=>beam(gT,v(base,cz+q*dp),v(base+hR*(1-dp/(RW/2)),cz+q*dp),.045,.095,M.stud));}
       if(PU){const zl=cz-PD*RW/2,Bf=f=>v(base,zl+PD*RW*f),Tf=f=>v(base+tn*RW*f,zl+PD*RW*f);{const sh=new THREE.Vector3(0,0,-PD*(rh/2+.012));beam(gT,Bf(1).add(sh),Tf(1).add(sh),rw,rh,glu?M.limtra:M.stud);}if(!glu&&!end){beam(gT,Bf(.5),Tf(.5),.045,.07,M.plate);beam(gT,Bf(.5),Tf(1),.045,.07,M.plate);}}
-      if(!glu&&!end&&!PU){const B1=v(base,cz-RW/6),B2=v(base,cz+RW/6),ML=v(base+tn*RW/4,cz-RW/4),MR=v(base+tn*RW/4,cz+RW/4);beam(gT,B1,ridge,.045,.07,M.plate);beam(gT,B2,ridge,.045,.07,M.plate);beam(gT,B1,ML,.045,.07,M.plate);beam(gT,B2,MR,.045,.07,M.plate);if(!isSimple())[B1,B2,ridge,ML,MR].forEach(p=>mk(gT,.052,.1,.1,M.metal).position.copy(p));}
+      if(!glu&&!end&&!PU&&RK==='s'){const B1=v(base,cz-RW/6),B2=v(base,cz+RW/6),ML=v(base+tn*RW/4,cz-RW/4),MR=v(base+tn*RW/4,cz+RW/4);beam(gT,B1,ridge,.045,.07,M.plate);beam(gT,B2,ridge,.045,.07,M.plate);beam(gT,B1,ML,.045,.07,M.plate);beam(gT,B2,MR,.045,.07,M.plate);if(!isSimple())[B1,B2,ridge,ML,MR].forEach(p=>mk(gT,.052,.1,.1,M.metal).position.copy(p));}
       
       
     }
+    if(RK==='a'&&!PU)[.33,.66,1].forEach(f=>[-1,1].forEach(q=>{if(f===1&&q===1)return;mk(gT,RL,.195,.07,M.stud).position.set(cx,base+hR*f-.07,cz+q*(RW/2)*(1-f));}));
     const V=THREE.Vector3,eL=RL+2*OG,co=Math.cos(P*Math.PI/180),si=Math.sin(P*Math.PI/180),sL=(RW/2+O)/co;
     const xs0=isW?Math.max(cx-eL/2,0):cx-eL/2;
     const dpN=Math.max(2,Math.ceil(2*eL/10)),px=(p,x)=>{const q=p.clone();q.x=x;return q;};
-    if(glu)mk(gT,eL,rh,rw,M.limtra).position.set(cx,base+tn*hsp-rh*.35,zr);
+    if(glu)mk(gT,eL,rh,rw,M.limtra).position.set(cx,base+hR-rh*.35,zr);
     if(glu&&!isW){const nS=parseInt($('hNS').value)||0,topP=base+tn*RW/2-rh*.35-rh/2-.02;for(let i=1;i<=nS;i++){const xx=cx-RL/2+i*RL/(nS+1),hh=topP-y0;if(hh>.2)mk(gT,.1,hh,.1,M.stud).position.set(xx,y0+hh/2,cz);}}
     const WBh=g0('GB'),xa0=cx-eL/2,xb0=cx+eL/2;
     const cutsFor=s=>isW?((o&&o.gar)?[]:[{a:xa0-1,b:0}]):WINGS.filter(w=>w.s===(s<0?'f':'b')).map(w=>({a:w.x0,b:w.x0+WBh}));
-    const yoR=(o&&o.yoff)||0,hP=base-tn*O-.07-.045+yoR;
+    const yoR=(o&&o.yoff)||0,hP=base-tE*O-.07-.045+yoR;
     sides.forEach(s=>{
-      const nv=new V(0,co,s*si),cuts=cutsFor(s);
+      const nv=new V(0,co,s*si),nvL=new V(0,coL,s*siL),cuts=cutsFor(s);
       const pts=[xa0,xb0];cuts.forEach(c=>{pts.push(Math.min(Math.max(c.a,xa0),xb0),Math.min(Math.max(c.b,xa0),xb0));});
       const xs=[...new Set(pts)].sort((p,q)=>p-q),segs=[];
       for(let i=0;i<xs.length-1;i++){const a=xs[i],b=xs[i+1];if(b-a<.01)continue;const mid=(a+b)/2;segs.push({a,b,ov:cuts.some(c=>mid>c.a&&mid<c.b)?0:O});}
-      const Rf=new V(cx,base+tn*hsp,zr),Ef=new V(cx,base-tn*O,zr+s*(hsp+O));
+      const Rf=new V(cx,base+hR,zr),Ef=new V(cx,base-tE*O,zr+s*(hsp+O)),Kf=new V(cx,base+hK,zr+s*(hsp-a1));
       const atf=(p,off)=>p===Rf?new V(cx,Rf.y+(off+rof)/co,zr):p.clone().addScaledVector(nv,off+rof);
       beam(gD,atf(Rf,.125),atf(Rf.clone().lerp(Ef,.2/Ef.distanceTo(Rf)),.125),eL,.014,M.metal2);
       [-1,1].forEach(sx=>{
         if(isW&&sx===-1&&!(o&&o.gar))return;
         const x1=cx+sx*(eL/2-.011),x2=cx+sx*(eL/2+.003);
-        beam(gD,px(atf(Ef,.045),x1),px(atf(Rf,.045),x1),.022,.145,M.joist);
-        beam(gD,px(atf(Ef,.03),x2),px(atf(Rf,.03),x2),.006,.17,M.metal2);
+        if(MA){beam(gD,px(Ef,x1),px(Kf,x1),.022,.145,M.joist);beam(gD,px(Kf,x1),px(Rf,x1),.022,.145,M.joist);}else beam(gD,px(atf(Ef,.045),x1),px(atf(Rf,.045),x1),.022,.145,M.joist);
+        if(MA){beam(gD,px(Ef,x2),px(Kf,x2),.006,.17,M.metal2);beam(gD,px(Kf,x2),px(Rf,x2),.006,.17,M.metal2);}else beam(gD,px(atf(Ef,.03),x2),px(atf(Rf,.03),x2),.006,.17,M.metal2);
       });
       const cand=[],sgs=[];
       segs.forEach(sg=>{if(isW&&!(o&&o.gar)&&sg.b<=.001&&sg.b-sg.a>.3){const n=Math.ceil((sg.b-sg.a)/.3),w2=(sg.b-sg.a)/n;for(let i=0;i<n;i++)sgs.push({a:sg.a+i*w2,b:sg.a+(i+1)*w2,ov:0});}else sgs.push(sg);});
       sgs.forEach(sg=>{
         const xc=(sg.a+sg.b)/2,len=sg.b-sg.a,Os=sg.ov;
-        let E=new V(xc,base-tn*Os,zr+s*(hsp+Os));const Rg=new V(xc,base+tn*hsp,zr);
+        let E=new V(xc,base-tE*Os,zr+s*(hsp+Os));const Rg=MA?new V(xc,base+hK,zr+s*(hsp-a1)):new V(xc,base+hR,zr);
         if(isW&&!(o&&o.gar)&&sg.b<=.001){const f=Math.max(0,1-2*Math.abs(xc)/RW);if(f<=.03)return;E=new V(xc,base+tn*(RW/2)*(1-f),cz+s*RW/2*f);}   // vingtaket i huvudtakets vind: bara ner till skärningen mot huvudtaket
-        const at=(p,off)=>p===Rg?new V(xc,Rg.y+(off+rof)/co,zr):p.clone().addScaledVector(nv,off+rof);
+        const coA=MA?coL:co,nvA=MA?nvL:nv,at=(p,off)=>p===Rg?new V(xc,Rg.y+(off+rof)/coA,Rg.z):p.clone().addScaledVector(nvA,off+rof);
         beam(gR,at(E,.0835),at(Rg,.0835),len,.022,M.spont);
         beam(gP,at(E,.0965),at(Rg,.0965),len,.004,M.papp);
         const nS=Math.max(1,Math.ceil(len/1.0)),w=len/nS;
         for(let i=0;i<nS;i++){const x=sg.a+w*(i+.5);beam(gS,px(at(E,.1045),x),px(at(Rg,.1045),x),w-.012,.012,M.metal);for(let r=0;r<(isSimple()?0:5);r++){const rx=x-w/2+.012+(r+.5)*(w-.024)/5;beam(gS,px(at(E,.116),rx),px(at(Rg,.116),rx),.03,.012,M.metal2);}}
+        if(MA){const K2=new V(xc,Rg.y,Rg.z),R2=new V(xc,base+hR,zr),at2=(p,off)=>p===R2?new V(xc,R2.y+(off+rof)/co,zr):p.clone().addScaledVector(nv,off+rof);
+          beam(gR,at2(K2,.0835),at2(R2,.0835),len,.022,M.spont);beam(gP,at2(K2,.0965),at2(R2,.0965),len,.004,M.papp);
+          for(let i=0;i<nS;i++){const x=sg.a+w*(i+.5);beam(gS,px(at2(K2,.1045),x),px(at2(R2,.1045),x),w-.012,.012,M.metal);}}
         if(Os<=0)return;
         const q=at(E,.11);
         beam(gD,new V(sg.a,q.y,q.z),new V(sg.b,q.y,q.z),.12,.012,M.metal2);
@@ -684,7 +693,7 @@ function part3d_(R,o,parent){
       const gc=new THREE.Group();gc.position.copy(gg.position);gc.rotation.y=ths[i];gC.add(gc);
       const gq=new THREE.Group();gq.position.copy(gg.position);gq.rotation.y=ths[i];gV.add(gq);
       const gx=new THREE.Group();gx.position.copy(gg.position);gx.rotation.y=ths[i];gA.add(gx);
-      const ht=x=>Math.max(0,tn*(PU?(PD*(s0[1]+sg*x-cz)+RW/2):(RW/2-Math.abs(s0[1]+sg*x-cz)))-rh/(2*co)-.03);
+      const ht=x=>Math.max(0,(PU?tn*(PD*(s0[1]+sg*x-cz)+RW/2):hg(RW/2-Math.abs(s0[1]+sg*x-cz)))-rh/(2*co)-.03);
       const xs=[];for(let x=.0225;x<len-.0225;x+=cc)xs.push(x);xs.push(len-.0225);
       xs.forEach(x=>{const h=ht(x);if(h>.05)mk(gg,.045,h,d,M.stud).position.set(x,h/2,d/2);});
       for(let x=0;x<len-.01;x+=.4){
