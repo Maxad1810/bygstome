@@ -313,7 +313,7 @@ const srv = http.createServer(async (req, res) => {
   if (!full.startsWith(ROOT) || /server\.js$|package(-lock)?\.json$|\.git|[\/\\](data|node_modules)[\/\\]/.test(full)) { res.statusCode = 404; return res.end('404'); }
   fs.readFile(full, (e, b) => {
     if (e) { res.statusCode = 404; return res.end('404'); }
-    res.setHeader('content-type', TYPES[path.extname(full)] || 'application/octet-stream'); res.end(b);
+    res.setHeader('cache-control', 'no-cache'); res.setHeader('content-type', TYPES[path.extname(full)] || 'application/octet-stream'); res.end(b);
   });
 });
 srv.on('listening', () => {

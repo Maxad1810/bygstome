@@ -272,7 +272,7 @@
 <script src="js/extra2.js"></script>
 <script src="js/live.js"></script>
 <script src="js/konto.js"></script>
-<script>if("serviceWorker"in navigator&&/^https:|^http:\/\/localhost/.test(location.origin))navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+<script>if("serviceWorker"in navigator&&/^https:|^http:\/\/localhost/.test(location.origin)){navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>r.update()).catch(()=>{});let had=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had)location.reload();had=true;});}</script>
 
 </body>
 </html>
