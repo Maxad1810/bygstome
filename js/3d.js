@@ -278,7 +278,7 @@ function build3d(){
     const act=WINGS.filter((w,i)=>wcount(i)>k),plan=act.length?wingPlan(L0,WB,act):null;
     part3d(R,{plan,noRoof:k<Nm-1,noGrund:k>0,yoff,k,N:Nm},sg);
     if(R.geo){if(k===0)R.geo.yo=[];R.geo.yo[k]=yoff;}
-    if($('kn').checked&&R.geo)knut3d(sg,[[0,0],[g0('W1'),0],[g0('W1'),g0('W2')],[g0('W1')-g0('W3'),g0('W2')]],k===0?R.geo.y0:0,pulpH(R.geo.H,{},k===Nm-1,g0('RW')),$('kc').value);
+    if($('kn').checked&&R.geo)knut3d(sg,[[0,0],[g0('W1'),0],[g0('W1'),g0('W2')],[g0('W1')-g0('W3'),g0('W2')]],k===0?R.geo.y0:0,pulpH(R.geo.H,{},k===Nm-1,g0('RW')),$('kc').value,WINGS.flatMap(w=>wingFlush(w).main));
   }
   const wRxV=($('wRx')&&$('wRx').value.trim()),ext0=wRxV?Math.max(0,Math.min(parseFloat(wRxV)||0,12)):Math.max(0,Math.min(WB/2,g('RW')/2-.1));window.WEXT=ext0;
   (hus?WINGS:[]).forEach((w,i)=>{
@@ -289,6 +289,9 @@ function build3d(){
       if(w.s==='b'){wg.rotation.y=-Math.PI/2;wg.position.set(w.x0+WB,0,g('W2'));}
       else{wg.rotation.y=Math.PI/2;wg.position.set(w.x0,0,0);}
       part3d(R,{wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:(k>=Nm?WB:0),RL:WL+ext,RW:WB,rext:ext,plan:null,wref:w,noRoof:k<Nw-1,noGrund:k>0,yoff,k,N:Nw},wg);
+      if($('kn').checked&&R.geo){const fl=wingFlush(w),y0w=k===0?R.geo.y0:0,Hw=R.geo.H,zo=$('pd').value==='s'?.098:.059,mt=knutMat($('kc').value);
+        knut3d(wg,[[0,0],[WL,0],[WL,WB],[0,WB]],y0w,[Hw,Hw,Hw,Hw],$('kc').value,[0,3]);
+        [[!fl.z0,-zo-.04],[!fl.zB,WB+zo+.04]].forEach(([on,zc])=>{if(!on)return;const m=new THREE.Mesh(R3.box,mt);m.scale.set(.08,Hw,.08);m.position.set(zo+.04,y0w+Hw/2,zc);wg.add(m);});}
       if(k===0){const hd={th:wg.rotation.y,ox:wg.position.x,oz:wg.position.z};mkHnd(wg,WL,1,WB/2,Object.assign({t:'wing',k:'L'},hd));mkHnd(wg,WL/2,1,WB,Object.assign({t:'wing',k:'B'},hd));if(ext>0||wRxV)mkHnd(wg,-ext,y00+H+Math.tan(g('P')*Math.PI/180)*WB/2,WB/2,Object.assign({t:'wing',k:'R'},hd));}
     }
   });
@@ -764,10 +767,12 @@ function pulpH(H,o,top,RW){
   const PU=roofIsPulpet(o),ex=PU&&top?Math.tan(g0('P')*Math.PI/180)*RW:0,hi=roofDir(o)===1?2:0;
   return [0,1,2,3].map(c=>H+((c<2?0:2)===hi?ex:0));
 }
-function knut3d(parent,ps,y0,Hs,col){
-  const key='k'+col;R3.kmat=R3.kmat||{};if(!R3.kmat[key])R3.kmat[key]=new THREE.MeshLambertMaterial({color:col});
-  const mt=R3.kmat[key];
+function wingFlush(w){const W1=g0('W1'),WB=g0('GB'),r=Math.abs(w.x0+WB-W1)<.02,l=Math.abs(w.x0)<.02;return w.s==='b'?{z0:r,zB:l,main:[r?2:-1,l?3:-1]}:{z0:l,zB:r,main:[l?0:-1,r?1:-1]};}
+function knutMat(col){const key='k'+col;R3.kmat=R3.kmat||{};if(!R3.kmat[key])R3.kmat[key]=new THREE.MeshLambertMaterial({color:col});return R3.kmat[key];}
+function knut3d(parent,ps,y0,Hs,col,skip){
+  const mt=knutMat(col);
   ps.forEach((p0,i)=>{
+    if(skip&&skip.includes(i))return;
     const g=new THREE.Group();g.position.set(p0[0],y0,p0[1]);g.rotation.y=[0,-Math.PI/2,Math.PI,Math.PI/2][i];parent.add(g);
     const H=Hs[i],bx=(sx,sz,x,z)=>{const m=new THREE.Mesh(R3.box,mt);m.scale.set(sx,H,sz);m.position.set(x,H/2,z);g.add(m);};
     bx(.25,.09,-.005,-.085);bx(.09,.25,-.085,-.005);
