@@ -369,6 +369,11 @@ function part3d_(R,o,parent){
     xs.forEach(x=>{mk(gF,.045,jh,FW,M.joist).position.set(x,fo+jh/2,FW/2);});
     [.0225,FW-.0225].forEach(z=>mk(gF,FL,jh,.045,M.joist).position.set(FL/2,fo+jh/2,z));
     mk(gF,FL,.022,FW,M.floor).position.set(FL/2,fo+jh+.011,FW/2);
+    {const hb=jh+.022,std=$('pd').value==='s',zo=std?.076:.048,yb=fo+hb/2;
+      mk(gW,FL+.1,hb,.022,panelMat(FL,hb,std)).position.set(FL/2,yb,-zo);
+      mk(gW,FL+.1,hb,.022,panelMat(FL,hb,std)).position.set(FL/2,yb,FW+zo);
+      if(!isW||(o&&o.gar))mk(gW,.022,hb,FW+.1,panelMat(FW,hb,std)).position.set(-zo,yb,FW/2);
+      mk(gW,.022,hb,FW+.1,panelMat(FW,hb,std)).position.set(FL+zo,yb,FW/2);}
     if(isW&&o.wref&&o.k===0){const pb=new THREE.Mesh(R3.box,M.pick);pb.scale.set(FL,.3,FW);pb.position.set(FL/2,fo+jh/2,FW/2);pb.userData.wing=o.wref;R.pick.push(pb);gF.add(pb);}
     if($('gr').value==='p'&&!(o&&o.noGrund)){
       const ph=g('ph')||.4,ln=Math.ceil(FW/2.4)+1,pl=Math.ceil(FL/1.8)+1;
