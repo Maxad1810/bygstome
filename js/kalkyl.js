@@ -403,7 +403,7 @@ function calcCore(o){
   const gips=Math.ceil(inA*sp/2.88);
   const ins=wallA*sp;
   // Tak
-  const rad=P*Math.PI/180,eaveL=L+((o&&o.wing&&!o.gar)?OG:2*OG),PU=roofIsPulpet(o),nSl=PU?1:2,slope=(PU?W+O:W/2+O)/Math.cos(rad);
+  const rad=P*Math.PI/180,eaveL=L+((o&&o.wing&&!o.gar)?OG:2*OG),PU=roofIsPulpet(o),nSl=PU?1:2,slope=(PU?W+O+((o&&o.gar)?g0('gaOT'):g('OT')):W/2+O)/Math.cos(rad);
   const roofA=nSl*eaveL*slope;
   const trusses=Math.ceil(L/ccT)+1;
   const lath=roofA/0.3*sp;

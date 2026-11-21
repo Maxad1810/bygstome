@@ -551,7 +551,7 @@ function part3d_(R,o,parent){
   const mnX=Math.min(...ps.map(p=>p[0])),mxX=Math.max(...ps.map(p=>p[0])),mnZ=Math.min(...ps.map(p=>p[1])),mxZ=Math.max(...ps.map(p=>p[1]));
   const cx=(mnX+mxX)/2-((o&&o.rext)||0)/2,cz=(mnZ+mxZ)/2;
   // Tak
-  const base=y0+H,tn=Math.tan(P*Math.PI/180),hsp=PU?RW:RW/2,zr=PU?cz+PD*RW/2:cz,sides=PU?[-PD]:[-1,1];
+  const base=y0+H,tn=Math.tan(P*Math.PI/180),OT=PU?((o&&o.gar)?g0('gaOT'):g('OT')):0,hsp=PU?RW+OT:RW/2,zr=PU?cz+PD*(RW/2+OT):cz,sides=PU?[-PD]:[-1,1];
   if(RL>0&&RW>0&&!(o&&o.noRoof)){
     const glu=$('rt').value==='g',[rw,rh]=$('rd').value.split('x').map(v=>parseInt(v)/1000),rof=rh/2-.0725;
     const WBg=g0('GB'),ovAt=(sd,x)=>isW?(x<0&&!(o&&o.gar)?0:O):(WINGS.some(w=>w.s===(sd<0?'f':'b')&&x>w.x0&&x<w.x0+WBg)?0:O);
