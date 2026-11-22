@@ -15,7 +15,7 @@ function skWallSpec(kind,wall,k,N){
   }
   const ol=gar?(gi.gops||[]).filter(x=>x.wall===wall).map((x,i)=>({id:(x.t==='f'?'GF':x.t==='p'?'GP':'GD')+(i+1),c:x.c,w:x.w,h:x.h,t:x.t,sill:x.t==='f'?.9:0}))
     :pdfOpenList().filter(x=>x.grp==='Hus'&&x.wall===wall&&x.k===k).map(x=>({id:x.id,c:x.c,w:x.w,h:x.h,t:x.t,sill:x.sill}));
-  return {title:(gar?'Garage':'Hus')+' - vägg '+(wall+1)+(gar?'':' - våning '+(k+1)),len,H,top:fn,maxTop,ops:ol};
+  return {code:gar?'GV'+(wall+1):'H'+(k+1)+'V'+(wall+1),title:(gar?'Garage':'Hus')+' - vägg '+(wall+1)+(gar?'':' - våning '+(k+1)),len,H,top:fn,maxTop,ops:ol};
 }
 function skDrawWall(doc,box,s){
   const dim=($('dim').value||'45x145').split('x').map(Number),t=(dim[0]||45)/1000,dd=(dim[1]||145)/1000,cc=g0('cc')||.6;
@@ -23,11 +23,11 @@ function skDrawWall(doc,box,s){
   doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(30);doc.text(pdfSan(s.title),box.x,box.y+4);
   doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(90);
   doc.text(pdfSan('Reglar '+Math.round(t*1000)+'x'+Math.round(dd*1000)+' c/c '+Math.round(cc*1000)+' mm  |  syll '+Math.round(t*1000)+'x'+Math.round(dd*1000)+'  |  ovanregel 2x'+Math.round(t*1000)+'x'+Math.round(dd*1000)+'  |  barlina 2x'+Math.round(t*1000)+'x145 over oppningar  |  alla matt i mm'.replace('barlina','bärlina').replace('over','över').replace('oppningar','öppningar').replace('alla matt','alla mått')),box.x,box.y+8);
-  const mT=16,mL=18,mR=22,mB=22,sc=Math.min((box.w-mL-mR)/len,(box.h-mT-mB)/s.maxTop),gx=box.x+mL,gy=box.y+box.h-mB;
+  const mT=16,mL=18,mR=22,mB=30,sc=Math.min((box.w-mL-mR)/len,(box.h-mT-mB)/s.maxTop),gx=box.x+mL,gy=box.y+box.h-mB;
   const X=x=>gx+x*sc,Y=y=>gy-y*sc;
   const fill=(c)=>doc.setFillColor(c[0],c[1],c[2]);
   const rect=(x1,y1,x2,y2,c)=>{if(x2-x1<=0||y2-y1<=0)return;fill(c);doc.setDrawColor(90);doc.setLineWidth(.12);doc.rect(X(x1),Y(y2),(x2-x1)*sc,(y2-y1)*sc,'FD');};
-  const STUD=[235,205,150],PL=[205,160,95],HD=[190,140,80];
+  const parts=[];let pn=0;const STUD=[235,205,150],PL=[205,160,95],HD=[190,140,80];
   const opsz=s.ops.map(o=>{const c=Math.min(Math.max(o.c,o.w/2),len-o.w/2);return {...o,c,x1:c-o.w/2,x2:c+o.w/2,yh:o.sill+o.h};});
   // syll
   rect(0,0,len,pl,PL);
@@ -40,7 +40,7 @@ function skDrawWall(doc,box,s){
     doc.setLineWidth(.1);doc.lines(xs.slice(1).map((x,i)=>[X(x)-X(xs[i]),Y(topF(x)-pl)-Y(topF(xs[i])-pl)]),X(0),Y(topF(0)-pl),[1,1],'S');
   }else{rect(0,H-pt,len,H,PL);doc.setLineWidth(.1);doc.setDrawColor(90);doc.line(X(0),Y(H-pl),X(len),Y(H-pl));}
   const topAt=x=>topF(Math.max(0,Math.min(len,x)))-pt;
-  const stud=(xc,y1,y2)=>rect(xc-t/2,y1,xc+t/2,y2,STUD);
+  const stud=(xc,y1,y2)=>{rect(xc-t/2,y1,xc+t/2,y2,STUD);pn++;parts.push([pn,Math.round((y2-y1)*1000/5)*5]);doc.setFontSize(4);doc.setTextColor(110);doc.text(String(pn),X(xc)+.35,Y(y2)+2.2,{angle:90});};
   // grid
   const grid=[];for(let x=t/2;x<len-t/2;x+=cc)grid.push(x);grid.push(len-t/2);
   const zone=x=>opsz.find(o=>x>o.x1-2*t-.001&&x<o.x2+2*t+.001);
@@ -76,6 +76,9 @@ function skDrawWall(doc,box,s){
   dimV(0,s.top?s.maxTop:H,X(len)+9,Math.round((s.top?s.maxTop:H)*1000));
   if(s.top)dimV(0,H,X(0)-8,Math.round(H*1000)+' (vid hörn)');
   const sl=Math.round((H-pl-pt)*1000);doc.setFontSize(6.5);doc.setTextColor(90);doc.text(pdfSan('Regellängd (full vägghöjd) '+sl+' mm'),gx,gy+19.5);
+  const grp={};parts.forEach(q=>{(grp[q[1]]=grp[q[1]]||[]).push(q[0]);});
+  const lg=Object.keys(grp).map(Number).sort((a,b)=>b-a).map(l=>{const a=grp[l];return s.code+'-'+(a.length>3?a[0]+'..'+a[a.length-1]:a.join(','))+': '+l+' mm x '+a.length;});
+  doc.setTextColor(60);doc.text(pdfSan('Reglar '+s.code+' (nr i ritningen): '+lg.join('  |  ')),gx,gy+23.5,{maxWidth:box.w-mL});
 }
 function skBuildPdf(){
   const JS=window.jspdf&&window.jspdf.jsPDF;if(!JS)throw new Error('PDF-biblioteket saknas');
@@ -108,6 +111,7 @@ function skBuildPdf(){
     if(walls[i+1])skDrawWall(doc,{x:14,y:108,w:PW-28,h:86},walls[i+1]);
     foot(page);
   }
+  if(typeof bgPdfPages==='function')bgPdfPages(doc,{np:t=>{doc.addPage();page++;head(t);},done:()=>foot(page)});
   return doc;
 }
 async function skSave(){
