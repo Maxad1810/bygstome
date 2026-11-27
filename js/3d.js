@@ -425,7 +425,7 @@ function part3d_(R,o,parent){
   if(!isW)IW.filter(w=>(w.k||0)===((o&&o.k)||0)).forEach(w=>{
     const dx=w.x2-w.x1,dz=w.z2-w.z1,L2=Math.hypot(dx,dz);if(L2<.2)return;
     const th=-Math.atan2(dz,dx),dd=.07,stt=[w.x1-Math.sin(th)*dd/2,w.z1-Math.cos(th)*dd/2];
-    wall3d(gI,L2,stt,th,w.d?[{c:Math.min(Math.max(w.dc==null?L2/2:w.dc,.45),L2-.45),w:.8,h:2.1,t:'d'}]:[],H,dd,cc,y0,gC,gV,gA);
+    wall3d(gI,L2,stt,th,w.d?[{c:Math.min(Math.max(w.dc==null?L2/2:w.dc,.45),L2-.45),w:.8,h:2.1,t:'d'}]:[],H,dd,cc,y0,new THREE.Group(),new THREE.Group(),new THREE.Group());
   });
   if(!isW){
     const kk=(o&&o.k)||0,LA=ELS.filter(e=>(e.k||0)===kk),L=LA.filter(e=>e.t!=='t'),LT=LA.filter(e=>e.t==='t'),y1=g0('elY')||.25;
