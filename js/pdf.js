@@ -46,7 +46,7 @@ function pdfOpenShape(psl,i,o,tf){
 }
 function pdfDecks(){
   const out=[],ws=[g0('W1'),g0('W2'),g0('W3'),g0('W4')],ps=[[0,0],[ws[0],0],[ws[0],ws[1]],[ws[0]-ws[2],ws[1]]];
-  const P=(i,x,t)=>{const ou=[-Math.sin(PDF_TH[i]),-Math.cos(PDF_TH[i])];return [ps[i][0]+PDF_DIR[i][0]*x+ou[0]*t,ps[i][1]+PDF_DIR[i][1]*x+ou[1]*t];};
+  const P=(i,x,t)=>{if(i>=10){const f=elFrame(i);if(!f)return [0,0];const ou=[-Math.sin(f.th),-Math.cos(f.th)];return [f.O[0]+f.dir[0]*x+ou[0]*t,f.O[1]+f.dir[1]*x+ou[1]*t];}const ou=[-Math.sin(PDF_TH[i]),-Math.cos(PDF_TH[i])];return [ps[i][0]+PDF_DIR[i][0]*x+ou[0]*t,ps[i][1]+PDF_DIR[i][1]*x+ou[1]*t];};
   if(!$('bHus').checked)return out;
   if($('dk').checked){
     const D=deckSegs(),hd=g0('dkH'),top=Math.max(.15,hd-.318)+.318;
@@ -55,7 +55,7 @@ function pdfDecks(){
     out.push({kind:'deck',k:0,dp:D.dp,top,thick:.318,roof:$('dkRoof')?$('dkRoof').value:'n',rh:g0('dkRH')||2.5,rack:$('dkR').checked,plinth:true,
       label:'Altan '+nf(D.dl,1)+' \u00d7 '+nf(D.dp,1)+' m',bigIdx:big,
       polys:D.segs.map(sg=>({poly:[P(sg.w,sg.a,0),P(sg.w,sg.b,0),P(sg.w,sg.b,D.dp),P(sg.w,sg.a,D.dp)],w:sg.w,dp:D.dp})),
-      stair:$('dkT').checked?{w:bs.w,cx:(bs.a+Math.min(bs.b,ws[bs.w]))/2}:null});
+      stair:$('dkT').checked?{w:bs.w,cx:(bs.a+Math.min(bs.b,bs.w>=10?(elFrame(bs.w)||{len:bs.b}).len:ws[bs.w]))/2}:null});
   }
   const bi=balcInfo();
   if(bi){

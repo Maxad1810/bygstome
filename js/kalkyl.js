@@ -234,7 +234,13 @@ function balcRows(){
 function deckSegs(){
   const wl=[g0('W1'),g0('W2'),g0('W3'),g0('W4')],dp=g0('dkD'),per=wl.reduce((a,b)=>a+b,0);
   const dl=Math.max(.5,Math.min(g0('dkL'),per-.1));
-  let w=Math.min(3,Math.max(0,parseInt($('dkS').value)||0)),x=Math.min(Math.max(g0('dkX'),0),Math.max(0,wl[w]-.05));
+  const wq=parseInt($('dkS').value)||0,wf=(wq>=10&&typeof elFrame==='function')?elFrame(wq):null;
+  if(wf){   // altan längs en vingvägg: en rak sträcka, utan hörn
+    const x=Math.min(Math.max(g0('dkX'),0),Math.max(0,wf.len-.5)),b=Math.min(x+Math.max(.5,g0('dkL')),wf.len);
+    const sg={w:wq,a:x,b,first:true,last:true,ext:false,startRail:true,endRail:true};
+    return {segs:[sg],dp,dl:b-x,corners:0,leff:b-x,cutByWing:false};
+  }
+  let w=Math.min(3,Math.max(0,wq)),x=Math.min(Math.max(g0('dkX'),0),Math.max(0,wl[w]-.05));
   const segs=[];let rem=dl,guard=0;
   while(rem>.01&&guard++<8){
     const avail=wl[w]-x;

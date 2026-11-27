@@ -144,4 +144,12 @@ function renderWarn(){
   box.innerHTML='<div class="whd">Varningar och tips ('+W.length+')</div>'+W.map(x=>'<div class="'+(x.s==='i'?'wi':'ww')+'">'+(x.s==='i'?'ℹ️ ':'⚠️ ')+x.t+'</div>').join('')+'<div class="wnote">Tumregler – ersätter inte konstruktör eller kommunens bedömning.</div>';
 }
 
-(function(){let key='';const _c=calc;calc=function(){const r=_c.apply(this,arguments);const k=WINGS.map(w=>w.s).join(',');if(k!==key){key=k;try{drawEls();}catch(e){}}return r;};})();
+(function(){let key='';const _c=calc;calc=function(){const r=_c.apply(this,arguments);const k=WINGS.map(w=>w.s).join(',');if(k!==key){key=k;try{drawEls();fillDeckSides();}catch(e){}}return r;};})();
+
+function fillDeckSides(){
+  const sel=$('dkS');if(!sel)return;const cur=sel.value,o=[[0,'Framsida (vägg 1)'],[1,'Höger (vägg 2)'],[2,'Baksida (vägg 3)'],[3,'Vänster (vägg 4)']];
+  WINGS.forEach((w,wx)=>[0,1,2].forEach(j=>o.push([10+wx*3+j,'Vinge '+(wx+1)+(j===1?', kortsida':', långsida '+(j===0?'1':'2'))])));
+  sel.innerHTML=o.map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('');
+  sel.value=o.some(x=>String(x[0])===cur)?cur:'0';
+}
+try{fillDeckSides();}catch(e){}

@@ -120,7 +120,9 @@ function bind3d(R){
       if(ipl(new THREE.Plane(new THREE.Vector3(0,1,0),-G.y0),p)){
         let best=null;
         G.ps.forEach((s,i)=>{const dx=G.dirs[i][0],dz=G.dirs[i][1],len=G.ws[i];const t=Math.min(Math.max((p.x-s[0])*dx+(p.z-s[1])*dz,0),len);const dist=Math.hypot(p.x-(s[0]+dx*t),p.z-(s[1]+dz*t));if(!best||dist<best.dist)best={i,t,dist};});
-        if(best){
+        WINGS.forEach((w,wx)=>[0,1,2].forEach(j=>{const q=10+wx*3+j,f=elFrame(q);if(!f)return;const t=Math.min(Math.max((p.x-f.O[0])*f.dir[0]+(p.z-f.O[1])*f.dir[1],0),f.len),dist=Math.hypot(p.x-(f.O[0]+f.dir[0]*t),p.z-(f.O[1]+f.dir[1]*t));if(!best||dist<best.dist-.05)best={i:q,t,dist,wing:f};}));
+        if(best&&best.wing){const dl=Math.min(g0('dkL'),best.wing.len);$('dkS').value=String(best.i);$('dkX').value=String(Math.round(Math.min(Math.max(best.t-dl/2,0),Math.max(0,best.wing.len-dl))*20)/20);build3d();}
+        else if(best){
           const wl=G.ws,per=wl.reduce((a2,b2)=>a2+b2,0),cum=[0,wl[0],wl[0]+wl[1],wl[0]+wl[1]+wl[2]];
           const dl=Math.min(g0('dkL'),per-.1),s0=(((cum[best.i]+best.t-dl/2)%per)+per)%per;
           let w=0;while(w<3&&s0>=cum[w]+wl[w])w++;
@@ -495,7 +497,7 @@ function part3d_(R,o,parent){
     let big=0;D.segs.forEach((sg,i)=>{if(sg.b-sg.a>D.segs[big].b-D.segs[big].a)big=i;});
     D.segs.forEach((sg,si2)=>{
       const sd=sg.w,x0=sg.a,dl=sg.b-sg.a;
-      const gk=new THREE.Group();gk.position.set(ps[sd][0],0,ps[sd][1]);gk.rotation.y=ths[sd];gK.add(gk);
+      const dfr=sd>=10?elFrame(sd):null,gk=new THREE.Group();gk.position.set(dfr?dfr.O[0]:ps[sd][0],0,dfr?dfr.O[1]:ps[sd][1]);gk.rotation.y=dfr?dfr.th:ths[sd];gK.add(gk);
       const lines=Math.ceil(dp/1.6)+1,perL=Math.ceil(dl/1.8)+1;
       for(let a2=0;a2<lines;a2++){
         const z=-(lines===1?dp/2:.1+a2*(dp-.2)/(lines-1));
@@ -839,5 +841,5 @@ document.addEventListener('change',e=>{
   const id=e.target&&e.target.id,on=e.target&&e.target.checked;
   const m={bk:'bkS',dk:'dkS',cp:'cpS'};
   if(m[id]&&on){setTimeout(()=>viewWall(parseInt($(m[id]).value)||0),250);}
-  if(['bkS','dkS','cpS'].includes(id)){const c={bkS:'bk',dkS:'dk',cpS:'cp'}[id];if($(c)&&$(c).checked)setTimeout(()=>viewWall(parseInt(e.target.value)||0),250);}
+  if(['bkS','dkS','cpS'].includes(id)){const c={bkS:'bk',dkS:'dk',cpS:'cp'}[id];if($(c)&&$(c).checked)setTimeout(()=>{let q=parseInt(e.target.value)||0;if(q>=10){const w=WINGS[Math.floor((q-10)/3)];q=w&&w.s==='b'?2:0;}viewWall(q);},250);}
 });

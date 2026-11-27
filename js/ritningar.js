@@ -9,7 +9,7 @@ function restore(s0){
   const s=JSON.parse(JSON.stringify(s0));
   Object.entries(s.f||{}).forEach(([id,v])=>{const el=$(id);if(!el||id==='rd')return;if(el.type==='checkbox')el.checked=!!v;else el.value=v;});
   ops=s.ops||[];ELS=s.els||[];IW=s.iw||[];GOPS=s.gops||[];GROWS=s.grows||[{id:1,t:'p',w:2.5,h:2.2,n:1},{id:2,t:'d',w:.9,h:2.1,n:1},{id:3,t:'f',w:1,h:1,n:1}];GUID=s.guid||Math.max(3,...GROWS.map(r=>r.id||0));drawGOps();inst=s.inst||[];uid=s.uid||0;WINGS=s.wings||[];WSH=s.wsh||$('hs').value;PRICE_OV=s.po||{};
-  sync();if(s.f&&s.f.rd)$('rd').value=s.f.rd;
+  sync();if(s.f&&s.f.rd)$('rd').value=s.f.rd;try{fillDeckSides();if(s.f&&s.f.dkS!=null)$('dkS').value=String(s.f.dkS);}catch(e){}
   drawOps();drawEls();try{drawIW();}catch(e){}if(R3&&!KEEPCAM)R3.fresh=true;calc();peelUpdate();
 }
 function pAll(){try{return JSON.parse(localStorage.getItem(PKEY)||'{}')||{};}catch(e){return {};}}
