@@ -98,6 +98,8 @@ function pdfPlanData(k,withGarage){
   pdfElList().filter(x=>(x.e.k||0)===k).forEach(x=>{
     const e=x.e;
     if(e.t==='t'){out.ceil.push({id:x.id,x:e.c,z:e.h});return;}
+    if((e.wall||0)>=10){const f=elFrame(e.wall);if(!f)return;const c=Math.min(Math.max(e.c,.1),f.len-.1),iw=[Math.sin(f.th),Math.cos(f.th)];
+      out.els.push({id:x.id,t:e.t,wall:-1,c,x:f.O[0]+f.dir[0]*c+iw[0]*PDF_D*.5,z:f.O[1]+f.dir[1]*c+iw[1]*PDF_D*.5});return;}
     const i=Math.min(3,Math.max(0,e.wall||0)),iw=[Math.sin(PDF_TH[i]),Math.cos(PDF_TH[i])],c=Math.min(Math.max(e.c,.1),ws[i]-.1);
     out.els.push({id:x.id,t:e.t,wall:i,c,x:ps[i][0]+PDF_DIR[i][0]*c+iw[0]*PDF_D*.5,z:ps[i][1]+PDF_DIR[i][1]*c+iw[1]*PDF_D*.5});
   });
@@ -639,7 +641,7 @@ function pdfBuild(){
     pdfElList().forEach(x=>{
       const e=x.e,k=e.k||0;if(k!==cur){cur=k;rows.push({sec:'V\u00e5ning '+(k+1)});}
       if(e.t==='t')rows.push({v:[x.id,TN.t,'Tak','X '+nf(e.c,2)+' m','Z '+nf(e.h,2)+' m','']});
-      else rows.push({v:[x.id,TN[e.t],wn[Math.min(3,Math.max(0,e.wall||0))],nf(e.c,2)+' m',nf(e.h,2)+' m','']});
+      else rows.push({v:[x.id,TN[e.t],(e.wall>=10?elWallName(e):wn[Math.min(3,Math.max(0,e.wall||0))]),nf(e.c,2)+' m',nf(e.h,2)+' m','']});
     });
     if(!rows.length)rows.push({sec:'Inga elpunkter'});
     pdfTable(doc,head,'Elschema \u2013 placering och m\u00e5tt',[{t:'Nr',x:M0},{t:'Typ',x:M0+16},{t:'V\u00e4gg / plats',x:M0+78},{t:'Avst\u00e5nd fr\u00e5n v\u00e4ggens start',x:M0+118},{t:'H\u00f6jd \u00f6ver golv',x:M0+176}],rows,PW,PH,M0,'Alla kablar dras i v\u00e4ggen till elcentralen. Kabelh\u00f6jd l\u00e4ngs v\u00e4ggen: '+nf(g('elY'),2)+' m. Taklampor m\u00e4ts fr\u00e5n husets v\u00e4nstra framh\u00f6rn (X \u00e5t h\u00f6ger, Z bak\u00e5t).');

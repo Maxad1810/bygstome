@@ -1,12 +1,33 @@
 /* ---------- El invändigt ---------- */
 let ELS=[{t:'c',k:0,wall:0,c:1,h:1.5},{t:'u',k:0,wall:0,c:3,h:.3},{t:'u',k:0,wall:1,c:2,h:.3},{t:'u',k:0,wall:2,c:3,h:.3},{t:'u',k:0,wall:3,c:2,h:.3},{t:'b',k:0,wall:0,c:2,h:1.1}];
 const ELN={u:'Eluttag',b:'Strömbrytare',l:'Lamputtag (vägg)',t:'Taklampa (i taket)',c:'Elcentral (säkringsskåp)'};
+function elWallOpts(){
+  const o=[[0,'Hus 1'],[1,'Hus 2'],[2,'Hus 3'],[3,'Hus 4']];
+  WINGS.forEach((w,wx)=>[0,1,2].forEach(j=>o.push([10+wx*3+j,'Vinge '+(wx+1)+', '+(j===1?'kortsida':'långsida '+(j===0?'1':'2'))])));
+  return o;
+}
+/* var en el-punkt sitter i förhållande till husets omkrets: värdväggen på huvudhuset + kabelsträcka längs vingen */
+function elLoc(e){
+  const wl=[g0('W1'),g0('W2'),g0('W3'),g0('W4')],q=e.wall||0;
+  if(q<10){const i=Math.min(3,Math.max(0,q));return {i,c:Math.min(e.c,wl[i]),extra:0};}
+  const wx=Math.floor((q-10)/3),j=(q-10)%3,w=WINGS[wx];if(!w)return {i:0,c:0,extra:0};
+  const GB=g0('GB'),GL=g0('GL'),B=w.s==='b',len=j===1?GB:GL,c=Math.min(Math.max(e.c,0),len);
+  const jx=j===2?(B?w.x0:w.x0+GB):(B?w.x0+GB:w.x0),host=B?2:0,hc=B?Math.max(0,g0('W1')-jx):jx,run=j===0?c:(j===2?GL-c:c+GL);
+  return {i:host,c:Math.min(hc,wl[host]),extra:run};
+}
+function elFrame(q){
+  const wx=Math.floor((q-10)/3),j=(q-10)%3,w=WINGS[wx];if(!w)return null;
+  const GB=g0('GB'),GL=g0('GL'),W2=g0('W2'),B=w.s==='b';
+  const tab=B?[[[w.x0+GB,W2],[0,1],GL],[[w.x0+GB,W2+GL],[-1,0],GB],[[w.x0,W2+GL],[0,-1],GL]]:[[[w.x0,0],[0,-1],GL],[[w.x0,-GL],[1,0],GB],[[w.x0+GB,-GL],[0,1],GL]];
+  const t=tab[j];return {O:t[0],dir:t[1],th:Math.atan2(-t[1][1],t[1][0]),len:t[2]};
+}
+function elWallName(e){const q=e.wall||0;if(q<10)return 'Hus '+(Math.min(3,Math.max(0,q))+1);const wx=Math.floor((q-10)/3),j=(q-10)%3;return 'Vinge '+(wx+1)+(j===1?' kortsida':' långsida '+(j===0?'1':'2'));}
 function drawEls(){
   const opt=(arr,cur)=>arr.map(([v,t])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${t}</option>`).join('');
   $('elList').innerHTML=ELS.map((e,i)=>`<div class="op">
   <label>Typ<select data-e="${i}" data-k="t">${opt(Object.entries(ELN),e.t)}</select></label>
   <label>Våning<select data-e="${i}" data-k="k">${opt([[0,1],[1,2],[2,3]],e.k||0)}</select></label>
-  ${e.t==='t'?'<label>Plats<input type="text" value="Tak" disabled></label>':`<label>Vägg<select data-e="${i}" data-k="wall">${opt([[0,1],[1,2],[2,3],[3,4]],e.wall||0)}</select></label>`}
+  ${e.t==='t'?'<label>Plats<input type="text" value="Tak" disabled></label>':`<label>Vägg<select data-e="${i}" data-k="wall">${opt(elWallOpts(),e.wall||0)}</select></label>`}
   <label>${e.t==='t'?'X m':'Läge m'}<input type="number" step="0.1" min="0" value="${e.c}" data-e="${i}" data-k="c"></label>
   <label>${e.t==='t'?'Z m':'Höjd m'}<input type="number" step="0.1" min="0" value="${e.h}" data-e="${i}" data-k="h"></label>
   <button class="x" type="button" data-edel="${i}" aria-label="Ta bort">✕</button></div>`).join('');
@@ -17,12 +38,12 @@ $('elList').addEventListener('click',ev=>{const d=ev.target.closest('[data-edel]
 function elRows(k){
   const L=ELS.filter(e=>(e.k||0)===k);if(!L.length)return [];
   const wl=[g0('W1'),g0('W2'),g0('W3'),g0('W4')],per=wl.reduce((a,b)=>a+b,0);
-  const pos=e=>{const i=Math.min(3,Math.max(0,e.wall||0));return wl.slice(0,i).reduce((a,b)=>a+b,0)+Math.min(e.c,wl[i]);};
-  const cen=L.find(e=>e.t==='c')||{wall:0,c:1,h:1.5},p0=pos(cen);
+  const pos=e=>{const l=elLoc(e);return wl.slice(0,l.i).reduce((a,b)=>a+b,0)+l.c;};
+  const cen=L.find(e=>e.t==='c')||{wall:0,c:1,h:1.5},p0=pos(cen),cx=elLoc(cen).extra;
   let c15=0,c25=0;
   const y1=g0('elY')||.25;
-  L.forEach(e=>{if(e.t==='c'||e.t==='t')return;const d0=Math.abs(pos(e)-p0),dist=Math.min(d0,per-d0)+Math.abs(e.h-y1)+Math.abs(cen.h-y1)+.5;if(e.t==='u')c25+=dist;else c15+=dist;});
-  const ci2=Math.min(3,Math.max(0,cen.wall||0)),cxy=[[cen.c,0],[wl[0],cen.c],[wl[0]-cen.c,wl[1]],[0,wl[1]-cen.c]][ci2];
+  L.forEach(e=>{if(e.t==='c'||e.t==='t')return;const d0=Math.abs(pos(e)-p0),dist=Math.min(d0,per-d0)+elLoc(e).extra+cx+Math.abs(e.h-y1)+Math.abs(cen.h-y1)+.5;if(e.t==='u')c25+=dist;else c15+=dist;});
+  const ci2=Math.min(3,Math.max(0,elLoc(cen).i)),cl=elLoc(cen),cxy=[[cl.c,0],[wl[0],cl.c],[wl[0]-cl.c,wl[1]],[0,wl[1]-cl.c]][ci2];
   L.forEach(e=>{if(e.t!=='t')return;c15+=Math.abs(e.c-cxy[0])+Math.abs(e.h-cxy[1])+Math.max(0,g0('H2')-.09-cen.h)+.5;});
   const n=t=>L.filter(e=>e.t===t).length,nu=n('u'),nb=n('b'),nl=n('l'),nt=n('t'),nc=n('c')||(k===0?1:0);
   const k15=c15*1.15,k25=c25*1.15,rows=[];
@@ -122,3 +143,5 @@ function renderWarn(){
   if(!W.length){box.innerHTML='<div class="wok">Inga varningar. Mängderna är ändå ungefärliga – kontrollera mot konstruktionsritning.</div>';return;}
   box.innerHTML='<div class="whd">Varningar och tips ('+W.length+')</div>'+W.map(x=>'<div class="'+(x.s==='i'?'wi':'ww')+'">'+(x.s==='i'?'ℹ️ ':'⚠️ ')+x.t+'</div>').join('')+'<div class="wnote">Tumregler – ersätter inte konstruktör eller kommunens bedömning.</div>';
 }
+
+(function(){let key='';const _c=calc;calc=function(){const r=_c.apply(this,arguments);const k=WINGS.map(w=>w.s).join(',');if(k!==key){key=k;try{drawEls();}catch(e){}}return r;};})();

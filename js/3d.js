@@ -429,31 +429,46 @@ function part3d_(R,o,parent){
     wall3d(gI,L2,stt,th,w.d?[{c:Math.min(Math.max(w.dc==null?L2/2:w.dc,.45),L2-.45),w:.8,h:2.1,t:'d'}]:[],H,dd,cc,y0,new THREE.Group(),new THREE.Group(),new THREE.Group());
   });
   if(!isW){
-    const kk=(o&&o.k)||0,LA=ELS.filter(e=>(e.k||0)===kk),L=LA.filter(e=>e.t!=='t'),LT=LA.filter(e=>e.t==='t'),y1=g0('elY')||.25;
+    const kk=(o&&o.k)||0,LA=ELS.filter(e=>(e.k||0)===kk),L=LA.filter(e=>e.t!=='t'&&!(e.wall>=10&&(!WINGS[Math.floor((e.wall-10)/3)]||wcount(Math.floor((e.wall-10)/3))<=kk))),LT=LA.filter(e=>e.t==='t'),y1=g0('elY')||.25;
     const wl=ws.slice(),perim=wl.reduce((a,b)=>a+b,0),cum=[0,wl[0],wl[0]+wl[1],wl[0]+wl[1]+wl[2]];
+    const GBw=g0('GB'),GLw=g0('GL'),W2w=ps[2][1];
+    // väggramar: 0-3 huvudhuset, 10+3*vinge+j vingväggar (j 0 och 2 långsidor, 1 kortsida)
+    const FR=i=>{
+      if(i<10)return {O:ps[i],dir:DIRS[i],th:ths[i],len:wl[i]};
+      const wx=Math.floor((i-10)/3),j=(i-10)%3,w=WINGS[wx];if(!w)return null;
+      const B=w.s==='b',tab=B?[[[w.x0+GBw,W2w],[0,1],GLw],[[w.x0+GBw,W2w+GLw],[-1,0],GBw],[[w.x0,W2w+GLw],[0,-1],GLw]]:[[[w.x0,0],[0,-1],GLw],[[w.x0,-GLw],[1,0],GBw],[[w.x0+GBw,-GLw],[0,1],GLw]];
+      const t=tab[j];return {O:t[0],dir:t[1],th:Math.atan2(-t[1][1],t[1][0]),len:t[2]};
+    };
+    const wlen=i=>{const f=FR(i);return f?f.len:0;};
     const gEw={};
-    const geo=i=>gEw[i]||(gEw[i]=(()=>{const q=new THREE.Group();q.position.set(ps[i][0],y0,ps[i][1]);q.rotation.y=ths[i];gE.add(q);return q;})());
+    const geo=i=>gEw[i]||(gEw[i]=(()=>{const f=FR(i),q=new THREE.Group();q.position.set(f.O[0],y0,f.O[1]);q.rotation.y=f.th;gE.add(q);return q;})());
     const hseg=(i,xa,xb,y)=>{const a=Math.min(xa,xb),b=Math.max(xa,xb);if(b-a>.02)mk(geo(i),b-a,.02,.02,M.cond).position.set((a+b)/2,y,d*.5);};
     const vseg=(i,x,ya,yb)=>{const a=Math.min(ya,yb),b=Math.max(ya,yb);if(b-a>.02)mk(geo(i),.02,b-a,.02,M.cond).position.set(x,(a+b)/2,d*.5);};
-    const wi=e=>Math.min(3,Math.max(0,e.wall||0));
+    const wi=e=>{const q=e.wall||0;return q>=10?(FR(q)?q:0):Math.min(3,Math.max(0,q));};
+    const loc=e=>{const q=wi(e);if(q<10)return {i:q,c:Math.min(e.c,wl[q]),run:null};
+      const wx=Math.floor((q-10)/3),j=(q-10)%3,w=WINGS[wx],B=w.s==='b',c=Math.min(Math.max(e.c,0),wlen(q));
+      const jx=(j===2)?(B?w.x0:w.x0+GBw):(B?w.x0+GBw:w.x0),host=B?2:0,hc=B?(wl[2]>0?Math.min(wl[2],Math.max(0,g0('W1')-jx)):0):jx;
+      return {i:host,c:Math.min(hc,wl[host]),run:{q,j,c,base:10+wx*3}};};
+    const runDraw=l=>{if(!l.run)return;const {q,j,c,base}=l.run;
+      if(j===0)hseg(q,c,0,y1);else if(j===2)hseg(q,c,wlen(q),y1);else{hseg(q,c,0,y1);hseg(base,wlen(base),0,y1);}};
     const cen=L.find(e=>e.t==='c')||{t:'c',wall:0,c:1,h:1.5};
-    const pos=e=>cum[wi(e)]+Math.min(e.c,wl[wi(e)]);
+    const lc=loc(cen),pos=e=>{const l=loc(e);return cum[l.i]+l.c;};
     L.forEach(e=>{
       const i=wi(e);
-      if(!(plan[i]||[]).some(q=>e.c>=q.s&&e.c<=q.e))return;
-      const x=Math.min(Math.max(e.c,.1),Math.max(.1,wl[i]-.1)),h=e.h,isC=e.t==='c',sz=isC?[.4,.6,.12]:[.085,.085,.03];
+      if(i<10&&!(plan[i]||[]).some(q=>e.c>=q.s&&e.c<=q.e))return;
+      const x=Math.min(Math.max(e.c,.1),Math.max(.1,wlen(i)-.1)),h=e.h,isC=e.t==='c',sz=isC?[.4,.6,.12]:[.085,.085,.03];
       mk(geo(i),sz[0],sz[1],sz[2],isC?M.metal:M.frame).position.set(x,h,d+sz[2]/2);
       if(!isC)mk(geo(i),.06,.06,.04,M.metal2).position.set(x,h,d-.02);
       const pk=new THREE.Mesh(R.box,M.pick);pk.scale.set(.22,.22,.12);pk.position.set(x,h,d+.04);pk.userData.el=e;geo(i).add(pk);R.pick.push(pk);
     });
-    const pc=pos(cen),ci=wi(cen),cxx=Math.min(Math.max(cen.c,.1),Math.max(.1,wl[ci]-.1));
-    vseg(ci,cxx,y1,cen.h);
+    const pc=cum[lc.i]+lc.c,ci=wi(cen),cxx=Math.min(Math.max(cen.c,.1),Math.max(.1,wlen(ci)-.1));
+    vseg(ci,cxx,y1,cen.h);runDraw(lc);
     L.forEach(e=>{
       if(e.t==='c')return;
-      const i0=wi(e),x0=Math.min(Math.max(e.c,.1),Math.max(.1,wl[i0]-.1));
-      vseg(i0,x0,e.h,y1);
+      const i0=wi(e),x0=Math.min(Math.max(e.c,.1),Math.max(.1,wlen(i0)-.1)),l=loc(e);
+      vseg(i0,x0,e.h,y1);runDraw(l);
       const df=(((pc-pos(e))%perim)+perim)%perim,dir=df<=perim/2?1:-1;
-      let w=i0,xl=x0,rem=dir>0?df:perim-df,guard=0;
+      let w=l.i,xl=l.c,rem=dir>0?df:perim-df,guard=0;
       while(rem>.02&&guard++<8){
         const avail=dir>0?wl[w]-xl:xl,step=Math.min(rem,avail);
         hseg(w,xl,xl+dir*step,y1);
@@ -461,8 +476,8 @@ function part3d_(R,o,parent){
         if(rem>.02){if(dir>0){w=(w+1)%4;xl=0;}else{w=(w+3)%4;xl=wl[w];}}
       }
     });
-    const yc=y0+H-.09,inw=i=>[Math.sin(ths[i]),Math.cos(ths[i])];
-    const cw=[ps[ci][0]+DIRS[ci][0]*cxx+inw(ci)[0]*(d+.03),ps[ci][1]+DIRS[ci][1]*cxx+inw(ci)[1]*(d+.03)];
+    const yc=y0+H-.09,fc=FR(ci),inw=[Math.sin(fc.th),Math.cos(fc.th)];
+    const cw=[fc.O[0]+fc.dir[0]*cxx+inw[0]*(d+.03),fc.O[1]+fc.dir[1]*cxx+inw[1]*(d+.03)];
     LT.forEach(e=>{
       const lx=e.c,lz=e.h,yh=yc+.04;
       const cyl=new THREE.Mesh(R.cyl,M.frame);cyl.scale.set(.07,.03,.07);cyl.position.set(lx,yc-.015,lz);gE.add(cyl);
