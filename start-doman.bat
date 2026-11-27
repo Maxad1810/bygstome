@@ -1,5 +1,6 @@
 @echo off
 cd /d "%~dp0"
+node uppdatera.js
 if not exist doman.txt (
   echo Kor setup-doman.bat forst.
   pause

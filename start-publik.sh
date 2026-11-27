@@ -1,5 +1,6 @@
 #!/bin/sh
 cd "$(dirname "$0")"
+node uppdatera.js
 [ -d node_modules ] || { npm install && npx playwright install chromium; }
 command -v cloudflared >/dev/null || { echo "Installera cloudflared först (brew install cloudflared eller se developers.cloudflare.com)."; exit 1; }
 PUBLIC=1 NO_OPEN=1 PORT=8080 node server.js &

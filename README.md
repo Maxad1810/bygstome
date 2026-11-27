@@ -176,3 +176,6 @@ Sadeltak, saxtakstol, mansardtak, ramverk, takåsar och pulpettak (snett tak) f�
 
 ## Kapplista
 Knappen "Visa kapplista" listar alla reglar, bjälkar, sparrar och fasadbrädor i 3D-modellen med dimension, kapad längd (i 5 mm-steg) och antal, och kan laddas ner som CSV för Excel. Listan följer modellen (hus, flyglar, garage och carport).
+
+## Automatisk uppdatering vid start
+Alla `start*.bat` / `start*.sh` kör först `node uppdatera.js`, som jämför filerna med GitHub (`Maxad1810/bygstome`, grenen `main`) och hämtar bara det som ändrats. Data, `node_modules` och startskripten rörs inte. Går det inte (offline eller privat repo) startar appen ändå. Kräver Node 18+ och ett publikt repo.
