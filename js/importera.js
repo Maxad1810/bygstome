@@ -81,7 +81,7 @@ function imApplyOutline(poly){
 function imFinish(b,fit,note){
   const r1=v=>Math.round(v*10)/10,n=fit.wings.length;
   const hs=n===0?'r':n===1?((fit.wings[0].x0>.1&&fit.wings[0].x0+fit.wings[0].w<fit.L-.1)?'t':'l'):(fit.wings.some(w=>w.s==='f')&&fit.wings.some(w=>w.s==='b')?'x':'u');
-  if($('imRep').checked){ops=ops.filter(o=>o.bd);inst=inst.filter(q=>ops.some(o=>o.id===q.oid));try{drawOps();}catch(e){}}
+  if($('imRep').checked){ops=ops.filter(o=>o.bd);inst=inst.filter(q=>ops.some(o=>o.id===q.oid));WINGS.forEach(w=>{w.gops=[];});try{drawOps();}catch(e){}}
   $('hs').value=hs;$('L').value=r1(fit.L);$('W').value=r1(fit.W);
   if(n){$('GB').value=r1(fit.wings.reduce((a,w)=>a+w.w,0)/n);$('GL').value=r1(fit.wings.reduce((a,w)=>a+w.len,0)/n);}
   ['hs','L','W','GL','GB'].forEach(id=>$(id).dispatchEvent(new Event('input',{bubbles:true})));
@@ -207,17 +207,49 @@ function imDetectOpenings(){
 }
 function imAddOpening(t,X,Z,wd){
   if(!IM.fit)return false;
-  const L=g0('W1'),W=g0('W2'),k=IM.k||0,tol=Math.max(.8,.06*Math.max(L,W));
-  const dist=[Math.abs(Z),Math.abs(X-L),Math.abs(Z-W),Math.abs(X)];let wi=0;dist.forEach((v,i)=>{if(v<dist[wi])wi=i;});
-  const along=[X,Z,L-X,W-Z][wi],ws=[L,W,L,W][wi];
-  if(dist[wi]>tol||along<0||along>ws)return false;
-  const dm=t==='d'?[Math.min(Math.max(wd||.9,.8),1.2),2.1]:[Math.min(Math.max(wd||1.2,.4),3),1.2],v=(mcount()>1)?k+1:0;
-  let o=ops.find(q=>q.t===t&&q.w===dm[0]&&q.h===dm[1]&&(q.v||0)===v&&!q.bd);
-  if(!o){o={t,w:dm[0],h:dm[1],n:0,v,id:++uid};ops.push(o);}
-  o.n=(o.n||0)+1;
-  inst.push({oid:o.id,k,wall:wi,c:Math.min(Math.max(along,dm[0]/2+.2),ws-dm[0]/2-.2)});
+  const L=g0('W1'),W=g0('W2'),GB=g0('GB'),GL=g0('GL'),tol=Math.max(.8,.06*Math.max(L,W));
+  const dm=t==='d'?[Math.min(Math.max(wd||.9,.8),1.2),2.1]:[Math.min(Math.max(wd||1.2,.4),3),1.2];
+  // kandidater: huvudhusets väggar och varje vinges väggar
+  const cand=[];
+  {const dist=[Math.abs(Z),Math.abs(X-L),Math.abs(Z-W),Math.abs(X)],along=[X,Z,L-X,W-Z],ws=[L,W,L,W];
+   dist.forEach((d,wi)=>{if(along[wi]>=0&&along[wi]<=ws[wi])cand.push({d,main:true,wi,c:along[wi],len:ws[wi]});});}
+  WINGS.forEach((w,wx)=>{
+    const xl=w.s==='b'?Z-W:-Z,zl=w.s==='b'?w.x0+GB-X:X-w.x0;
+    if(xl<-.1||xl>GL+.8||zl<-.8||zl>GB+.8)return;
+    [[Math.abs(zl),0,xl,GL],[Math.abs(xl-GL),1,zl,GB],[Math.abs(zl-GB),2,GL-xl,GL]].forEach(([d,wi,c,len])=>{if(c>=0&&c<=len)cand.push({d,main:false,wx,wi,c,len});});
+  });
+  cand.sort((a,b)=>a.d-b.d);const c0=cand[0];
+  if(!c0||c0.d>tol)return false;
+  if(c0.main){
+    const k=IM.k||0,v=(mcount()>1)?k+1:0;
+    let o=ops.find(q=>q.t===t&&q.w===dm[0]&&q.h===dm[1]&&(q.v||0)===v&&!q.bd);
+    if(!o){o={t,w:dm[0],h:dm[1],n:0,v,id:++uid};ops.push(o);}
+    o.n=(o.n||0)+1;
+    inst.push({oid:o.id,k,wall:c0.wi,c:Math.min(Math.max(c0.c,dm[0]/2+.2),c0.len-dm[0]/2-.2)});
+  }else{
+    const w=WINGS[c0.wx];(w.gops=w.gops||[]).push({wall:c0.wi,c:Math.min(Math.max(c0.c,dm[0]/2+.2),c0.len-dm[0]/2-.2),w:dm[0],h:dm[1],t});
+  }
   return true;
 }
+/* lista för öppningar i vingar */
+function wgDraw(){
+  const box=$('wgOps');if(!box)return;
+  const rows=[];WINGS.forEach((w,wx)=>(w.gops||[]).forEach((x,i)=>rows.push({w,wx,x,i})));
+  if(!rows.length){box.innerHTML='';return;}
+  const nm=['långsida','kortsida (ände)','långsida'];
+  box.innerHTML='<p class="note" style="margin:6px 0 2px">Öppningar i vingar (gäller första våningen)</p>'+rows.map(({wx,x,i})=>'<div class="op"><span class="note" style="align-self:end">Vinge '+(wx+1)+', '+nm[x.wall]+'</span>'+
+    '<label>Typ<select data-wx="'+wx+'" data-i="'+i+'" data-k="t"><option value="f"'+(x.t==='f'?' selected':'')+'>Fönster</option><option value="d"'+(x.t==='d'?' selected':'')+'>Dörr</option></select></label>'+
+    ['w','h','c'].map(k=>'<label>'+({w:'Bredd m',h:'Höjd m',c:'Läge m'}[k])+'<input type="number" step="0.05" min="0" value="'+(Math.round(x[k]*100)/100)+'" data-wx="'+wx+'" data-i="'+i+'" data-k="'+k+'"></label>').join('')+
+    '<button class="x" type="button" data-wx="'+wx+'" data-i="'+i+'" data-del="1" aria-label="Ta bort öppning">✕</button></div>').join('');
+}
+(function(){
+  const box=$('wgOps');if(!box)return;
+  const upd=()=>{try{calc();build3d();}catch(e){console.error(e);}};
+  box.addEventListener('change',e=>{const t=e.target;if(t.dataset.wx==null||t.dataset.del)return;const x=WINGS[+t.dataset.wx].gops[+t.dataset.i],k=t.dataset.k;
+    if(k==='t'){x.t=t.value;if(t.value==='d'){x.h=2.1;if(x.w<.8)x.w=.9;}else{x.h=1.2;}}else x[k]=parseFloat(t.value)||x[k];wgDraw();upd();});
+  box.addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;WINGS[+b.dataset.wx].gops.splice(+b.dataset.i,1);wgDraw();upd();});
+  const _c=calc;calc=function(){const r=_c.apply(this,arguments);try{wgDraw();}catch(e){}return r;};
+})();
 (function(){
   const svg=$('imSvg');if(!svg)return;
   const pt=e=>{const m=svg.getScreenCTM();if(!m)return null;const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(m.inverse());return [q.x,q.y];};
@@ -273,7 +305,7 @@ function imAddOpening(t,X,Z,wd){
     }
     if(IM.mode==='win'||IM.mode==='door'){
       if(imAddOpening(IM.mode==='win'?'f':'d',h[0],h[1])){IM.marks.push([p[0],p[1],IM.mode==='win'?'f':'d']);try{drawOps();calc();build3d();}catch(x){console.error(x);}imRender();}
-      else imHint('Klicka närmare en yttervägg på huvudhuset.');
+      else imHint('Klicka närmare en yttervägg.');
     }
   });
   $('imAuto').onclick=()=>{if(!need())return;const n=imDetect();if(n)imHint('Hittade '+n+' innerväggar. Kontrollera mot ritningen och ta bort eller rita om det som är fel (listan under Innerväggar). Dörrar sätts där väggen har en lucka.');else if(IM.poly&&imS())imHint('Hittade inga innerväggar. Rita dem för hand med steg 3.');};
@@ -281,12 +313,12 @@ function imAddOpening(t,X,Z,wd){
     if(!need())return;if(!IM.poly||!imS()){imHint('Sätt skala och markera husets ytterkant först.');return;}
     const list=imDetectOpenings();if(!list||!list.length){imHint('Hittade inga fönster eller dörrar i ytterväggarna. Klicka in dem för hand.');return;}
     const before=imSnapshot();let n=0,skipped=0;
-    if($('imRep').checked){ops=ops.filter(o=>o.bd);inst=inst.filter(q=>ops.some(o=>o.id===q.oid));}
+    if($('imRep').checked){ops=ops.filter(o=>o.bd);inst=inst.filter(q=>ops.some(o=>o.id===q.oid));WINGS.forEach(w=>{w.gops=[];});}
     kSel();IM.marks=[];
     list.forEach(o=>{const m=imXf(o.px[0]/ (IM.w?Math.min(1,2400/Math.max(IM.w,IM.h)):1),o.px[1]/(IM.w?Math.min(1,2400/Math.max(IM.w,IM.h)):1));if(imAddOpening(o.t,m[0],m[1],o.w)){n++;IM.marks.push([...imInv(m[0],m[1]),o.t]);}else skipped++;});
     IM.undo2=before;
     try{drawOps();calc();build3d();}catch(x){console.error(x);}imRender();
-    imHint('Hittade '+n+' fönster och dörrar'+(skipped?' ('+skipped+' på vingar eller utanför huvudhuset hoppades över, de kan inte läggas på vingar)':'')+'. Fönster är '+'1,2 m höga och dörrar 2,1 m. Ändra mått i listan Fönster och dörrar. Fel? Klicka "Ångra import".');
+    imHint('Hittade '+n+' fönster och dörrar'+(skipped?' ('+skipped+' låg för långt från en yttervägg och hoppades över)':'')+'. Fönster är '+'1,2 m höga och dörrar 2,1 m. Ändra mått i listan Fönster och dörrar. Fel? Klicka "Ångra import".');
   };
   $('imUndo').onclick=()=>{const j=IM.undo2||IM.undo;if(!j){imHint('Inget att ångra.');return;}imRestore(j);IM.undo2=null;IM.undo=null;IM.marks=[];imRender();imHint('Importen ångrades.');};
   $('imReset').onclick=()=>{IM.img=null;IM.url='';IM.sc=null;IM.box=null;IM.poly=null;IM.sPts=null;IM.pxLen=0;IM.marks=[];IM.pts=[];IM.mode='';IM.fit=null;IM.rot=0;IM.dz=0;$('imFile').value='';$('imPg').style.display='none';pdfDoc=null;imRender();imHint('Välj en ritning (bild eller PDF) för att börja.');};

@@ -62,7 +62,7 @@
 <div class="tools" style="margin:6px 0"><button type="button" id="imWall">Rita innervägg</button><button type="button" id="imWin">Klicka in fönster</button><button type="button" id="imDoor">Klicka in dörr</button><button type="button" id="imUndo">Ångra import</button><button type="button" id="imReset">Rensa</button></div>
 <p class="note" id="imHint" style="margin:0 0 4px">Välj en ritning (bild eller PDF) för att börja.</p>
 <svg id="imSvg" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-height:420px;background:#fff;border:1px solid var(--line);border-radius:4px;cursor:crosshair;touch-action:manipulation" role="img" aria-label="Importerad ritning"></svg>
-<p class="note" style="margin:4px 0 0">Huvudhuset och upp till två vingar (L, T, U, X) kan importeras. Huset kan vridas ett kvartsvarv i modellen så att huvudkroppen ligger längs längdaxeln. Fönster och dörrar läggs på huvudhusets väggar, inte på vingarna. Kontrollera resultatet, särskilt på ritningar med tunna linjer eller möbler.</p>
+<p class="note" style="margin:4px 0 0">Huvudhuset och upp till två vingar (L, T, U, X) kan importeras. Huset kan vridas ett kvartsvarv i modellen så att huvudkroppen ligger längs längdaxeln. Kontrollera resultatet, särskilt på ritningar med tunna linjer eller möbler.</p>
 </fieldset>
 <fieldset data-need="hus"><legend>Husets mått</legend>
 <div class="row">
@@ -132,6 +132,7 @@
 <fieldset data-need="hus"><legend>Fönster och dörrar</legend>
 <div id="ops"></div>
 <button type="button" id="add">Lägg till öppning</button>
+<div id="wgOps"></div>
 </fieldset>
 <fieldset data-need="hus"><legend>Innerväggar</legend>
 <div class="tools" style="margin:0 0 6px"><label style="margin:0">Våning<select id="iwK"></select></label><button type="button" id="iwUndo">Ångra senaste</button><button type="button" id="iwClear">Rensa våningen</button><button type="button" id="iwCopy" title="Kopiera innerväggarna till nästa våning">Kopiera till nästa våning</button></div>

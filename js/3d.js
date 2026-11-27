@@ -300,7 +300,7 @@ function build3d(){
       const wg=new THREE.Group();sg.add(wg);
       if(w.s==='b'){wg.rotation.y=-Math.PI/2;wg.position.set(w.x0+WB,0,g('W2'));}
       else{wg.rotation.y=Math.PI/2;wg.position.set(w.x0,0,0);}
-      part3d(R,{wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:(k>=Nm?WB:0),RL:WL+ext,RW:WB,rext:ext,plan:null,wref:w,noRoof:k<Nw-1,noGrund:k>0,yoff,k,N:Nw},wg);
+      part3d(R,{wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:(k>=Nm?WB:0),RL:WL+ext,RW:WB,rext:ext,plan:null,wref:w,gops:k===0?(w.gops||[]):[],noRoof:k<Nw-1,noGrund:k>0,yoff,k,N:Nw},wg);
       if($('kn').checked&&R.geo){const fl=wingFlush(w),kdw=(parseInt($('jd').value.split('x')[1])||195)/1000+.022,y0w=k===0?R.geo.y0-kdw:0,Hw=R.geo.H+(k===0?kdw:0),zo=$('pd').value==='s'?.098:.059,mt=knutMat($('kc').value);
         knut3d(wg,[[0,0],[WL,0],[WL,WB],[0,WB]],y0w,[Hw,Hw,Hw,Hw],$('kc').value,[0,3]);
         [[!fl.z0,-zo-.04],[!fl.zB,WB+zo+.04]].forEach(([on,zc])=>{if(!on)return;const m=new THREE.Mesh(R3.box,mt);m.scale.set(.08,Hw,.08);m.position.set(zo+.04,y0w+Hw/2,zc);wg.add(m);});}
@@ -343,7 +343,7 @@ function build3dPrev(){
       const wg=new THREE.Group();sg.add(wg);
       if(w.s==='b'){wg.rotation.y=-Math.PI/2;wg.position.set(w.x0+WB,0,g('W2'));}
       else{wg.rotation.y=Math.PI/2;wg.position.set(w.x0,0,0);}
-      part3d(R,{...fl,wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:0,RL:WL+ext,RW:WB,rext:ext,plan:null,wref:w},wg);
+      part3d(R,{...fl,wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:0,RL:WL+ext,RW:WB,rext:ext,plan:null,wref:w,gops:w.gops||[]},wg);
     });
   }
   R.draw();

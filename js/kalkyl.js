@@ -344,10 +344,10 @@ function calcPrev(){
   for(let k=0;k<N;k++){
     const top=k===N-1,fl={noGable:!top,noGrund:k>0,N};
     const parts=[['Hus',{...fl,segs}]];
-    WINGS.forEach((w,i)=>parts.push(['Vinge '+(i+1),{...fl,wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:0,RL:WL,RW:WB,I:0}]));
+    WINGS.forEach((w,i)=>parts.push(['Vinge '+(i+1),{...fl,wgo:k===0?(w.gops||[]):[],wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:0,RL:WL,RW:WB,I:0}]));
     parts.forEach(([nm,opt],pi)=>{
       let s;
-      if(opt.wing){const so=ops;ops=[];try{s=calcCore(opt);}finally{ops=so;}}else s=calcCore(opt);
+      if(opt.wing){const so=ops;ops=(opt.wgo||[]).map((x,i)=>({t:x.t,w:x.w,h:x.h,n:1,id:'w'+i}));try{s=calcCore(opt);}finally{ops=so;}}else s=calcCore(opt);
       if(!top)s=s.filter(x=>!ROOF.includes(x[0]));
       s.forEach(x=>{
         if(k>0&&x[0]==='Golv')x[0]='Mellanbjälklag';
@@ -365,7 +365,7 @@ function calcOld(){
   const hs=$('hs').value==='l',WL=g('GL'),WB=g('GB');
   let sec=calcCore(hs?{W3:Math.max(0,g('W3')-WB),Lm:true}:null);
   if(hs){
-    const so=ops;ops=[];let w;
+    const so=ops;ops=WINGS.flatMap(x=>x.gops||[]).map((x,i)=>({t:x.t,w:x.w,h:x.h,n:1,id:'w'+i}));let w;
     try{w=calcCore({wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:0,RL:WL,RW:WB,I:0});}finally{ops=so;}
     w.forEach(s=>{s[0]='Vinge – '+s[0];});sec=sec.concat(w);
   }
