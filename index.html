@@ -54,13 +54,15 @@
 <p class="note" style="margin:6px 0 0">Slå upp snölasten för din plats i <a href="https://www.boverket.se/sv/PBL-kunskapsbanken/regler-om-byggande/boverkets-konstruktionsregler/laster/snolast-pa-mark/" target="_blank" rel="noopener">Boverkets snölastkarta</a>. Zonerna går från ca 1,0 i söder till 3,5 och mer i Norrland. Fel värde ger fel resultat.</p>
 </fieldset>
 <fieldset data-need="hus"><legend>Importera ritning</legend>
-<p class="note" style="margin:0 0 6px">Ladda upp en planritning som bild (PNG eller JPG) och gör den till en 3D-modell: sätt skalan, markera husets ytterkant, och låt appen hitta innerväggarna (eller rita dem själv). Klicka sedan in fönster och dörrar.</p>
-<div class="tools" style="margin:0 0 6px"><input type="file" id="imFile" accept="image/*"></div>
+<p class="note" style="margin:0 0 6px">Ladda upp en planritning som PDF eller bild (PNG, JPG) och gör den till en 3D-modell: sätt skalan, markera husets ytterkant (rektangel, L-, T-, U- eller X-form) och låt appen hitta innerväggar, fönster och dörrar. Allt kan klickas in eller rättas för hand, och importen kan ångras.</p>
+<div class="tools" style="margin:0 0 6px"><input type="file" id="imFile" accept="image/*,application/pdf,.pdf"><select id="imPg" style="display:none" aria-label="PDF-sida"></select></div>
 <div class="row"><label>Verkligt mått för skalan (m)<input id="imDist" type="text" inputmode="decimal" value="10"></label><label>Våning<select id="imK"><option value="0">1</option><option value="1">2</option><option value="2">3</option></select></label></div>
-<div class="tools" style="margin:6px 0"><button type="button" id="imScale">1. Sätt skala</button><button type="button" id="imBox">2. Husets ytterkant</button><button type="button" id="imAuto">Hitta innerväggar automatiskt</button><button type="button" id="imWall">3. Rita innervägg</button><button type="button" id="imWin">Fönster</button><button type="button" id="imDoor">Dörr</button><button type="button" id="imReset">Rensa</button></div>
-<p class="note" id="imHint" style="margin:0 0 4px">Välj en ritning (bild) för att börja.</p>
+<label class="chk"><input type="checkbox" id="imRep" checked> Ersätt befintliga fönster och dörrar</label>
+<div class="tools" style="margin:6px 0"><button type="button" id="imScale">1. Sätt skala</button><button type="button" id="imOutline">2. Husets ytterkant</button><button type="button" id="imDone">Klar med ytterkant</button><button type="button" id="imAuto">3. Hitta innerväggar</button><button type="button" id="imAutoOp">4. Hitta fönster och dörrar</button></div>
+<div class="tools" style="margin:6px 0"><button type="button" id="imWall">Rita innervägg</button><button type="button" id="imWin">Klicka in fönster</button><button type="button" id="imDoor">Klicka in dörr</button><button type="button" id="imUndo">Ångra import</button><button type="button" id="imReset">Rensa</button></div>
+<p class="note" id="imHint" style="margin:0 0 4px">Välj en ritning (bild eller PDF) för att börja.</p>
 <svg id="imSvg" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-height:420px;background:#fff;border:1px solid var(--line);border-radius:4px;cursor:crosshair;touch-action:manipulation" role="img" aria-label="Importerad ritning"></svg>
-<p class="note" style="margin:4px 0 0">Husets form blir en rektangel. Den automatiska sökningen läser av tjocka väggar i ritningen och fungerar bäst på tydliga ritningar. Kontrollera resultatet. Mått och öppningar kan ändras i listorna.</p>
+<p class="note" style="margin:4px 0 0">Huvudhuset och upp till två vingar (L, T, U, X) kan importeras. Huset kan vridas ett kvartsvarv i modellen så att huvudkroppen ligger längs längdaxeln. Fönster och dörrar läggs på huvudhusets väggar, inte på vingarna. Kontrollera resultatet, särskilt på ritningar med tunna linjer eller möbler.</p>
 </fieldset>
 <fieldset data-need="hus"><legend>Husets mått</legend>
 <div class="row">
