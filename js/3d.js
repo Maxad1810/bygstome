@@ -289,7 +289,8 @@ function build3d(){
     const act=WINGS.filter((w,i)=>wcount(i)>k),plan=act.length?wingPlan(L0,WB,act):null;
     part3d(R,{plan,noRoof:k<Nm-1,noGrund:k>0,yoff,k,N:Nm},sg);
     if(R.geo){if(k===0)R.geo.yo=[];R.geo.yo[k]=yoff;}
-    if($('kn').checked&&R.geo)knut3d(sg,[[0,0],[g0('W1'),0],[g0('W1'),g0('W2')],[g0('W1')-g0('W3'),g0('W2')]],k===0?R.geo.y0:0,pulpH(R.geo.H,{},k===Nm-1,g0('RW')),$('kc').value,WINGS.flatMap(w=>wingFlush(w).main));
+    const kdn=(parseInt($('jd').value.split('x')[1])||195)/1000+.022;
+    if($('kn').checked&&R.geo)knut3d(sg,[[0,0],[g0('W1'),0],[g0('W1'),g0('W2')],[g0('W1')-g0('W3'),g0('W2')]],k===0?R.geo.y0-kdn:0,pulpH(R.geo.H,{},k===Nm-1,g0('RW')).map(v=>v+(k===0?kdn:0)),$('kc').value,WINGS.flatMap(w=>wingFlush(w).main));
   }
   const wRxV=($('wRx')&&$('wRx').value.trim()),ext0=wRxV?Math.max(0,Math.min(parseFloat(wRxV)||0,12)):Math.max(0,Math.min(WB/2,g('RW')/2-.1));window.WEXT=ext0;
   (hus?WINGS:[]).forEach((w,i)=>{
@@ -300,7 +301,7 @@ function build3d(){
       if(w.s==='b'){wg.rotation.y=-Math.PI/2;wg.position.set(w.x0+WB,0,g('W2'));}
       else{wg.rotation.y=Math.PI/2;wg.position.set(w.x0,0,0);}
       part3d(R,{wing:true,FL:WL,FW:WB,W1:WL,W2:WB,W3:WL,W4:(k>=Nm?WB:0),RL:WL+ext,RW:WB,rext:ext,plan:null,wref:w,noRoof:k<Nw-1,noGrund:k>0,yoff,k,N:Nw},wg);
-      if($('kn').checked&&R.geo){const fl=wingFlush(w),y0w=k===0?R.geo.y0:0,Hw=R.geo.H,zo=$('pd').value==='s'?.098:.059,mt=knutMat($('kc').value);
+      if($('kn').checked&&R.geo){const fl=wingFlush(w),kdw=(parseInt($('jd').value.split('x')[1])||195)/1000+.022,y0w=k===0?R.geo.y0-kdw:0,Hw=R.geo.H+(k===0?kdw:0),zo=$('pd').value==='s'?.098:.059,mt=knutMat($('kc').value);
         knut3d(wg,[[0,0],[WL,0],[WL,WB],[0,WB]],y0w,[Hw,Hw,Hw,Hw],$('kc').value,[0,3]);
         [[!fl.z0,-zo-.04],[!fl.zB,WB+zo+.04]].forEach(([on,zc])=>{if(!on)return;const m=new THREE.Mesh(R3.box,mt);m.scale.set(.08,Hw,.08);m.position.set(zo+.04,y0w+Hw/2,zc);wg.add(m);});}
       if(k===0){const hd={th:wg.rotation.y,ox:wg.position.x,oz:wg.position.z};mkHnd(wg,WL,1,WB/2,Object.assign({t:'wing',k:'L'},hd));mkHnd(wg,WL/2,1,WB,Object.assign({t:'wing',k:'B'},hd));if(ext>0||wRxV)mkHnd(wg,-ext,y00+H+Math.tan(g('P')*Math.PI/180)*WB/2,WB/2,Object.assign({t:'wing',k:'R'},hd));}
