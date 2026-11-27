@@ -28,8 +28,8 @@ function bgRender(){
   const rows=klCollect(),box=$('bgOut');if(!box)return null;
   if(!rows||!rows.length){box.innerHTML='<p class="note">Ingen modell att räkna på än.</p>';return null;}
   const o=bgOptimize(rows);let tc=0,tm=0;
-  let h='<table class="kl"><thead><tr><th>Dimension</th><th>Köp (antal × längd)</th><th>Meter</th><th>kr/m</th><th>Kostnad</th><th>Spill</th></tr></thead><tbody>';
-  o.forEach(x=>{tc+=x.cost;tm+=x.buyM;h+='<tr><td>'+x.dim+'</td><td>'+x.items.map(i=>i.n+' × '+nf(i.len/1000,1)+' m').join(', ')+(x.skarv?' <em>('+x.skarv+' skarv)</em>':'')+'</td><td>'+nf(x.buyM,0)+'</td><td>'+nf(x.price,0)+'</td><td>'+nf(x.cost,0)+' kr</td><td>'+Math.round(x.waste*100)+' %</td></tr>';});
+  let h='<table class="kl"><thead><tr><th>Dimension</th><th>Används till</th><th>Köp (antal × längd)</th><th>Meter</th><th>kr/m</th><th>Kostnad</th><th>Spill</th></tr></thead><tbody>';
+  o.forEach(x=>{tc+=x.cost;tm+=x.buyM;h+='<tr><td>'+x.dim+'</td><td>'+klUse(x.dim)+'</td><td>'+x.items.map(i=>i.n+' × '+nf(i.len/1000,1)+' m').join(', ')+(x.skarv?' <em>('+x.skarv+' skarv)</em>':'')+'</td><td>'+nf(x.buyM,0)+'</td><td>'+nf(x.price,0)+'</td><td>'+nf(x.cost,0)+' kr</td><td>'+Math.round(x.waste*100)+' %</td></tr>';});
   h+='</tbody></table><p class="note"><b>Totalt '+nf(tc,0)+' kr</b> ('+nf(tm,0)+' m virke att köpa, riktpris inkl. moms). Kapplistans delar är packade i valda standardlängder med 3 mm sågsnitt. Delar längre än längsta längd måste skarvas.</p>';
   box.innerHTML=h;return o;
 }

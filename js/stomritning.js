@@ -96,7 +96,7 @@ function skBuildPdf(){
   rows.forEach(r=>{
     if(line>=perCol){col++;line=1;curDim='';if(col>2){foot(page);doc.addPage();page++;head('Kapplista (forts.)');col=0;}colHead(14+col*colW);}
     const x=14+col*colW,y=y0+line*lineH;doc.setFontSize(7);doc.setTextColor(20);
-    if(r.dim!==curDim){doc.setFont('helvetica','bold');doc.text(pdfSan(r.dim),x,y);doc.setFont('helvetica','normal');curDim=r.dim;}
+    if(r.dim!==curDim){doc.setFont('helvetica','bold');doc.text(pdfSan(r.dim),x,y);doc.setFont('helvetica','normal');curDim=r.dim;doc.setFontSize(5.5);doc.setTextColor(90);const ul=doc.splitTextToSize(pdfSan(klUse(r.dim)),colW*.46);doc.text(ul,x,y+2.6);doc.setFontSize(7);doc.setTextColor(20);line+=Math.max(0,Math.ceil((2.6+ul.length*2.2)/lineH)-1);}
     doc.text(String(r.len),x+colW*.48,y,{align:'right'});doc.text(String(r.n),x+colW*.66,y,{align:'right'});doc.text(pdfSan(nf(r.len*r.n/1000,1)),x+colW*.86,y,{align:'right'});
     line++;
   });
