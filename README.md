@@ -5,6 +5,7 @@ Materialberäkning för regelstomme med 3D-modell. Fyll i husets mått och få e
 ## Kom igång
 
 - **Lokalt:** öppna `index.html` i webbläsaren (allt ligger lokalt, även 3D-biblioteket, så det fungerar utan internet).
+- **Språk:** välj svenska, engelska eller tyska uppe till höger. Valet sparas, och PDF-filerna följer med.
 - **En enda fil:** `stomkalkyl-enfil.html` är hela appen i en fil.
 - **På webben (GitHub Pages):** Settings → Pages → Deploy from a branch → `main`, mappen där `index.html` ligger.
 

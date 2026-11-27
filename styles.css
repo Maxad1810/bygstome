@@ -158,3 +158,11 @@ a:hover{text-decoration-thickness:2px}
 a:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:2px}
 input[type=checkbox],input[type=radio]{min-height:0;margin:0;padding:0;box-shadow:none}
 input[type=checkbox]:hover{border-color:inherit}
+
+.langsw{position:absolute;top:14px;right:16px;display:flex;align-items:center;gap:6px;z-index:5}
+.langsw label{margin:0;font-size:18px;line-height:1}
+.langsw select{width:auto;min-height:36px;margin:0;padding:5px 28px 5px 10px;font-weight:600;cursor:pointer}
+.wrap{position:relative}
+@media(max-width:600px){.langsw{top:10px;right:10px}}
+h1{padding-right:150px}
+@media(max-width:420px){h1{padding-right:120px}}

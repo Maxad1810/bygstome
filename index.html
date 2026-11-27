@@ -13,6 +13,7 @@
 </head>
 <body>
 <div class="wrap">
+<div class="langsw"><label for="lang" class="langl" data-notr>🌐</label><select id="lang" aria-label="Språk / Language / Sprache" data-notr><option value="sv">Svenska</option><option value="en">English</option><option value="de">Deutsch</option></select></div>
 <h1>Stomkalkyl</h1>
 <p class="lead">Räkna ut virke, skivor och isolering till en regelstomme. Fyll i husets mått – listan uppdateras direkt.</p>
 <div class="grid">
@@ -297,6 +298,8 @@
 <script src="js/extra2.js"></script>
 <script src="js/live.js"></script>
 <script src="js/konto.js"></script>
+<script src="js/sprak-data.js"></script>
+<script src="js/sprak.js"></script>
 <script>if("serviceWorker"in navigator&&/^https:|^http:\/\/localhost/.test(location.origin)){navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>r.update()).catch(()=>{});let had=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had)location.reload();had=true;});}</script>
 
 </body>
