@@ -1,4 +1,9 @@
 /* PDF: kapplista + stomritning (reglar, syll, ovanregel, bärlinor) med mått för varje vägg. */
+function skInner(w,i,k){
+  const len=Math.hypot(w.x2-w.x1,w.z2-w.z1),ops=[];
+  if(w.d){const dw=w.dw||.8,c=Math.min(Math.max(w.dc==null?len/2:w.dc,dw/2+.1),len-dw/2-.1);ops.push({id:'D1',c,w:dw,h:2.1,t:'d',sill:0});}
+  return {code:'I'+(k+1)+'-'+(i+1),title:'Innervägg '+(i+1)+' - våning '+(k+1)+(w.d?' (med dörr)':''),len,H:g0('H2'),top:null,maxTop:g0('H2'),ops};
+}
 function skWallSpec(kind,wall,k,N){
   const P=g0('P'),tn=Math.tan(P*Math.PI/180),tL=Math.tan(65*Math.PI/180),gar=kind==='g',gi=gar?garageInfo():null;
   const o=gar?{wing:true,gar:true}:null,PU=roofIsPulpet(o),PD=roofDir(o),RK=roofKind(o);
@@ -104,6 +109,7 @@ function skBuildPdf(){
   // väggar
   const walls=[],N=mcount();
   if($('bHus').checked)for(let k=0;k<N;k++)for(let w=0;w<4;w++){if(g0('W'+(w+1))>0)walls.push(skWallSpec('h',w,k,N));}
+  if(typeof IW!=='undefined'&&$('bHus').checked)for(let k=0;k<N;k++){IW.filter(w=>(w.k||0)===k).forEach((w,i)=>{if(Math.hypot(w.x2-w.x1,w.z2-w.z1)>.3)walls.push(skInner(w,i,k));});}
   const gi=garageInfo();if(gi&&gi.type!=='c')for(let w=0;w<4;w++)walls.push(skWallSpec('g',w,0,1));
   for(let i=0;i<walls.length;i+=2){
     doc.addPage();page++;head('Stomritning - väggar');
