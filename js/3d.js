@@ -52,7 +52,7 @@ function bind3d(R){
     const h=dragH,G=R.geo,p=new THREE.Vector3();setM(e);
     if(!(h.t==='gar'?ipw:ipl)(new THREE.Plane(new THREE.Vector3(0,1,0),-h.y),p))return;
     let lx,lz;
-    if(h.t==='deck'||h.t==='balc'||(h.t==='cap'&&h.host==='h')){if(!G)return;const s0=G.ps[h.sd],dr=G.dirs[h.sd],dx=p.x-s0[0],dz=p.z-s0[1];lx=dx*dr[0]+dz*dr[1];lz=dz*dr[0]-dx*dr[1];}
+    if(h.t==='deck'||h.t==='balc'||(h.t==='cap'&&h.host==='h')){if(!G)return;const fw=h.sd>=10?elFrame(h.sd):null;if(!fw&&!G.ps[h.sd])return;const s0=fw?fw.O:G.ps[h.sd],dr=fw?fw.dir:G.dirs[h.sd],dx=p.x-s0[0],dz=p.z-s0[1];lx=dx*dr[0]+dz*dr[1];lz=dz*dr[0]-dx*dr[1];}
     else{const dx=p.x-h.ox,dz=p.z-h.oz,c=Math.cos(h.th),s=Math.sin(h.th);lx=dx*c-dz*s;lz=dx*s+dz*c;}
     if(h.t==='cap'&&h.k==='m'){
       const isG=h.host==='g',gi=garageInfo();if(isG&&!gi)return;
@@ -121,12 +121,16 @@ function bind3d(R){
         let best=null;
         G.ps.forEach((s,i)=>{const dx=G.dirs[i][0],dz=G.dirs[i][1],len=G.ws[i];const t=Math.min(Math.max((p.x-s[0])*dx+(p.z-s[1])*dz,0),len);const dist=Math.hypot(p.x-(s[0]+dx*t),p.z-(s[1]+dz*t));if(!best||dist<best.dist)best={i,t,dist};});
         WINGS.forEach((w,wx)=>[0,1,2].forEach(j=>{const q=10+wx*3+j,f=elFrame(q);if(!f)return;const t=Math.min(Math.max((p.x-f.O[0])*f.dir[0]+(p.z-f.O[1])*f.dir[1],0),f.len),dist=Math.hypot(p.x-(f.O[0]+f.dir[0]*t),p.z-(f.O[1]+f.dir[1]*t));if(!best||dist<best.dist-.05)best={i:q,t,dist,wing:f};}));
-        if(best&&best.wing){const dl=Math.min(g0('dkL'),best.wing.len);$('dkS').value=String(best.i);$('dkX').value=String(Math.round(Math.min(Math.max(best.t-dl/2,0),Math.max(0,best.wing.len-dl))*20)/20);build3d();}
-        else if(best){
-          const wl=G.ws,per=wl.reduce((a2,b2)=>a2+b2,0),cum=[0,wl[0],wl[0]+wl[1],wl[0]+wl[1]+wl[2]];
-          const dl=Math.min(g0('dkL'),per-.1),s0=(((cum[best.i]+best.t-dl/2)%per)+per)%per;
-          let w=0;while(w<3&&s0>=cum[w]+wl[w])w++;
-          $('dkS').value=String(w);$('dkX').value=String(Math.round((s0-cum[w])*20)/20);build3d();
+        if(best){
+          const RG=deckRing(),dl=Math.min(g0('dkL'),RG.total-.1);
+          let ei=RG.ents.findIndex(e=>e.w===best.i&&best.t>=e.a-.001&&best.t<=e.b+.001);
+          if(ei<0){let bd=1e9;RG.ents.forEach((e,i)=>{if(e.w!==best.i)return;const d=Math.min(Math.abs(best.t-e.a),Math.abs(best.t-e.b));if(d<bd){bd=d;ei=i;}});}
+          if(ei>=0){
+            const en=RG.ents[ei],s0=(((en.s+Math.min(Math.max(best.t,en.a),en.b)-en.a-dl/2)%RG.total)+RG.total)%RG.total;
+            let j=RG.ents.length-1;while(j>0&&RG.ents[j].s>s0)j--;
+            const e2=RG.ents[j];
+            $('dkS').value=String(e2.w);$('dkX').value=String(Math.round((e2.a+s0-e2.s)*20)/20);build3d();
+          }
         }
       }
       return;
@@ -514,7 +518,7 @@ function part3d_(R,o,parent){
       if(rack){
         const ry=1.0,post=(x,z)=>mk(gk,.095,ry,.095,M.stud).position.set(x,top+ry/2,z);
         const rails=(xa,xb,z)=>{if(xb-xa<.05)return;[ry-.03,ry*.5,.15].forEach(yy=>mk(gk,xb-xa,.045,.07,M.stud).position.set((xa+xb)/2,top+yy,z));};
-        const zo=-dp+.05,xs2=hasSt?[[x0,sx0],[sx1,x0+dl]]:[[x0,x0+dl]];
+        const xe=x0+dl-(sg.cEnd?dp:0),zo=-dp+.05,xs2=hasSt?[[x0,sx0],[sx1,xe]]:[[x0,xe]];
         xs2.forEach(([xa,xb])=>{const n=Math.max(1,Math.ceil((xb-xa)/1.2));for(let i=0;i<=n;i++)post(xa+.05+i*(xb-xa-.1)/n,zo);rails(xa,xb,zo);});
         const nz=Math.max(1,Math.ceil(dp/1.2)),ends=[];
         if(sg.first&&sg.startRail!==false)ends.push(x0+.05);

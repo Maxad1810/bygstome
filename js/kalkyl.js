@@ -231,30 +231,49 @@ function balcRows(){
   if(b.posts){const h=Math.max(.5,top-.223);rows.push(['Stödstolpar 95x95 (balkong)','2 st','längd '+nf(h,1)+' m, till marken']);rows.push(['Plintar (balkong)','2 st','under stödstolparna']);}
   return rows;
 }
-function deckSegs(){
-  const wl=[g0('W1'),g0('W2'),g0('W3'),g0('W4')],dp=g0('dkD'),per=wl.reduce((a,b)=>a+b,0);
-  const dl=Math.max(.5,Math.min(g0('dkL'),per-.1));
-  const wq=parseInt($('dkS').value)||0,wf=(wq>=10&&typeof elFrame==='function')?elFrame(wq):null;
-  if(wf){   // altan längs en vingvägg: en rak sträcka, utan hörn
-    const x=Math.min(Math.max(g0('dkX'),0),Math.max(0,wf.len-.5)),b=Math.min(x+Math.max(.5,g0('dkL')),wf.len);
-    const sg={w:wq,a:x,b,first:true,last:true,ext:false,startRail:true,endRail:true};
-    return {segs:[sg],dp,dl:b-x,corners:0,leff:b-x,cutByWing:false};
-  }
-  let w=Math.min(3,Math.max(0,wq)),x=Math.min(Math.max(g0('dkX'),0),Math.max(0,wl[w]-.05));
-  const segs=[];let rem=dl,guard=0;
-  while(rem>.01&&guard++<8){
-    const avail=wl[w]-x;
-    if(rem>avail+.001){segs.push({w,a:x,b:wl[w]+dp,first:segs.length===0,last:false,ext:true});rem-=avail;w=(w+1)%4;x=0;}
-    else{segs.push({w,a:x,b:x+rem,first:segs.length===0,last:true,ext:false});rem=0;}
-  }
-  const pieces=[];
-  segs.forEach(sg=>{
-    cutPieces(sg.w,sg.a,sg.b,0).forEach(p=>{
-      pieces.push({w:sg.w,a:p.a,b:p.b,ext:sg.ext&&!p.endCut,first:sg.first&&!p.startCut,last:sg.last&&!p.endCut,startRail:!p.startCut,endRail:!p.endCut});
+function deckRing(){
+  // Husets omkrets som en följd av raka sträckor, med vingarnas väggar insatta där de sitter.
+  const wl=[g0('W1'),g0('W2'),g0('W3'),g0('W4')],L0=g0('W1'),B=g0('GB'),ents=[];
+  for(let w=0;w<4;w++){
+    const cuts=[];
+    if($('hs')&&$('hs').value!=='r')WINGS.forEach((wg,wx)=>{
+      if(wcount(wx)<=0)return;
+      if(w===0&&wg.s==='f')cuts.push({ia:wg.x0,ib:wg.x0+B,wx});
+      if(w===2&&wg.s==='b')cuts.push({ia:L0-wg.x0-B,ib:L0-wg.x0,wx});
     });
-  });
-  const corners=pieces.filter(s=>s.ext).length,leff=pieces.reduce((a2,p)=>a2+(p.b-p.a),0);
-  return {segs:pieces,dp,dl:Math.max(0,leff-corners*dp),corners,leff,cutByWing:pieces.length!==segs.length||segs.some((sg,i)=>!pieces[i]||Math.abs(pieces[i].b-sg.b)>1e-6||Math.abs(pieces[i].a-sg.a)>1e-6)};
+    cuts.sort((p,q)=>p.ia-q.ia);
+    let pos=0;
+    cuts.forEach(c=>{
+      if(c.ia-pos>.15)ents.push({w,a:pos,b:c.ia,cvx:false});
+      for(let j=0;j<3;j++){const q=10+3*c.wx+j,f=typeof elFrame==='function'?elFrame(q):null;if(f)ents.push({w:q,a:0,b:f.len,cvx:j<2});}
+      pos=Math.max(pos,c.ib);
+    });
+    if(wl[w]-pos>.15)ents.push({w,a:pos,b:wl[w],cvx:true});
+  }
+  let t=0;ents.forEach(e=>{e.s=t;t+=e.b-e.a;});
+  return {ents,total:t};
+}
+function deckSegs(){
+  const R0=deckRing(),ents=R0.ents,n=ents.length,dp=g0('dkD');
+  const dl=Math.max(.5,Math.min(g0('dkL'),R0.total-.1));
+  const wq=parseInt($('dkS').value)||0,x0=g0('dkX');
+  let ei=-1,bd=1e9;
+  ents.forEach((e,i)=>{if(e.w!==wq)return;const d=x0<e.a?e.a-x0:x0>e.b?x0-e.b:0;if(d<bd){bd=d;ei=i;}});
+  if(ei<0)ei=0;
+  let x=Math.min(Math.max(x0,ents[ei].a),Math.max(ents[ei].a,ents[ei].b-.05));
+  const segs=[];let rem=dl,guard=0,conc=false;
+  while(rem>.01&&guard++<40){
+    const e=ents[ei],avail=e.b-x;
+    if(rem>avail+.001){
+      if(avail>.04)segs.push(e.cvx?{w:e.w,a:x,b:e.b+dp,first:segs.length===0,last:false,ext:true,startRail:true,endRail:true}:{w:e.w,a:x,b:e.b,first:segs.length===0,last:false,ext:false,startRail:true,endRail:false,cEnd:true});
+      rem-=avail;conc=!e.cvx;
+      ei=(ei+1)%n;x=ents[ei].a;
+      if(conc){x=Math.min(ents[ei].b,x+dp);rem=Math.max(0,rem-dp);}
+    }else{segs.push({w:e.w,a:x,b:x+rem,first:segs.length===0,last:true,ext:false,startRail:true,endRail:true});rem=0;}
+  }
+  if(segs.length&&!segs.some(s=>s.last))segs[segs.length-1].last=true;
+  const corners=segs.filter(s=>s.ext).length,leff=segs.reduce((a2,p)=>a2+(p.b-p.a),0);
+  return {segs,dp,dl:Math.max(0,leff-corners*dp),corners,leff,cutByWing:false};
 }
 function deckRows(){
   if(!$('dk').checked)return null;
