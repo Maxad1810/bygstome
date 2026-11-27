@@ -250,6 +250,9 @@ function deckRing(){
     });
     if(wl[w]-pos>.15)ents.push({w,a:pos,b:wl[w],cvx:true});
   }
+  const DR=[[1,0],[0,1],[-1,0],[0,-1]];
+  ents.forEach(e=>{e.d=e.w>=10?elFrame(e.w).dir:DR[e.w];});
+  ents.forEach((e,i)=>{const n2=ents[(i+1)%ents.length],cr=e.d[0]*n2.d[1]-e.d[1]*n2.d[0];e.turn=cr>.5?1:cr<-.5?-1:(e.d[0]*n2.d[0]+e.d[1]*n2.d[1]<0?-1:0);e.cvx=e.turn>0;});
   let t=0;ents.forEach(e=>{e.s=t;t+=e.b-e.a;});
   return {ents,total:t};
 }
@@ -265,10 +268,10 @@ function deckSegs(){
   while(rem>.01&&guard++<40){
     const e=ents[ei],avail=e.b-x;
     if(rem>avail+.001){
-      if(avail>.04)segs.push(e.cvx?{w:e.w,a:x,b:e.b+dp,first:segs.length===0,last:false,ext:true,startRail:true,endRail:true}:{w:e.w,a:x,b:e.b,first:segs.length===0,last:false,ext:false,startRail:true,endRail:false,cEnd:true});
-      rem-=avail;conc=!e.cvx;
+      if(avail>.04)segs.push(e.cvx?{w:e.w,a:x,b:e.b+dp,first:segs.length===0,last:false,ext:true,startRail:true,endRail:true}:{w:e.w,a:x,b:e.b,first:segs.length===0,last:false,ext:false,startRail:true,endRail:false,cEnd:e.turn<0});
+      rem-=avail;conc=e.turn<0;
       ei=(ei+1)%n;x=ents[ei].a;
-      if(conc){x=Math.min(ents[ei].b,x+dp);rem=Math.max(0,rem-dp);}
+      if(conc){const pl=segs.length?segs[segs.length-1]:null,ok=pl&&pl.b-pl.a>=dp-.001;if(pl&&!ok)pl.cEnd=false;if(ok){x=Math.min(ents[ei].b,x+dp);rem=Math.max(0,rem-dp);}}
     }else{segs.push({w:e.w,a:x,b:x+rem,first:segs.length===0,last:true,ext:false,startRail:true,endRail:true});rem=0;}
   }
   if(segs.length&&!segs.some(s=>s.last))segs[segs.length-1].last=true;
