@@ -373,9 +373,9 @@ function part3d_(R,o,parent){
   const ws=[g('W1'),g('W2'),g('W3'),g('W4')];
   const PU=roofIsPulpet(o),PD=roofDir(o),tnP=Math.tan(P*Math.PI/180),hiExtra=PU&&!(o&&o.noRoof)?tnP*RW:0,hiWall=PD===1?2:0,wallH=i=>H+(i===hiWall?hiExtra:0);
   const jh=(parseInt($('jd').value.split('x')[1])||195)/1000,d=(parseInt($('dim').value.split('x')[1])||145)/1000,fo=($('gr').value==='p'&&!(o&&o.noGrund)?(g('ph')||.4)+jh:0),y0=(o&&o.slab)?.15:fo+jh+.022;
-  const gF=new THREE.Group(),gW=new THREE.Group(),gT=new THREE.Group(),gR=new THREE.Group(),gD=new THREE.Group(),gG=new THREE.Group(),gC=new THREE.Group(),gV=new THREE.Group(),gP=new THREE.Group(),gS=new THREE.Group(),gA=new THREE.Group(),gE=new THREE.Group(),gK=new THREE.Group();
-  parent.add(gF,gW,gT,gR,gD,gG,gC,gV,gP,gS,gA,gE,gK);
-  gF.visible=$('l1').checked;gW.visible=$('l2').checked;gT.visible=$('l3').checked;const LG={l1:gF,l2:gW,l3:gT,l5:gD,l6:gG,l7:gC,l8:gV,l9:gS,l10:gP,l11:gR,l12:gA,l13:gE,l14:gK};Object.keys(LG).forEach(id=>{LG[id].visible=$(id).checked;(R.layers[id]=R.layers[id]||[]).push(LG[id]);});
+  const gF=new THREE.Group(),gW=new THREE.Group(),gT=new THREE.Group(),gR=new THREE.Group(),gD=new THREE.Group(),gG=new THREE.Group(),gC=new THREE.Group(),gV=new THREE.Group(),gP=new THREE.Group(),gS=new THREE.Group(),gA=new THREE.Group(),gE=new THREE.Group(),gK=new THREE.Group(),gI=new THREE.Group();
+  parent.add(gF,gW,gT,gR,gD,gG,gC,gV,gP,gS,gA,gE,gK,gI);
+  gF.visible=$('l1').checked;gW.visible=$('l2').checked;gT.visible=$('l3').checked;const LG={l1:gF,l2:gW,l3:gT,l5:gD,l6:gG,l7:gC,l8:gV,l9:gS,l10:gP,l11:gR,l12:gA,l13:gE,l14:gK,l15:gI};Object.keys(LG).forEach(id=>{LG[id].visible=$(id).checked;(R.layers[id]=R.layers[id]||[]).push(LG[id]);});
   // Golv
   if(o&&o.gar&&$('gaCar')&&$('gaCar').checked)car3d(parent,FL,FW,.15);
   if(o&&o.slab){mk(gF,FL,.15,FW,M.conc).position.set(FL/2,.075,FW/2);const pb0=new THREE.Mesh(R.box,M.pick);pb0.scale.set(FL,.4,FW);pb0.position.set(FL/2,.2,FW/2);pb0.userData.garage=true;gF.add(pb0);R.pick.push(pb0);}else if(FL>0&&FW>0){
@@ -425,7 +425,7 @@ function part3d_(R,o,parent){
   if(!isW)IW.filter(w=>(w.k||0)===((o&&o.k)||0)).forEach(w=>{
     const dx=w.x2-w.x1,dz=w.z2-w.z1,L2=Math.hypot(dx,dz);if(L2<.2)return;
     const th=-Math.atan2(dz,dx),dd=.07,stt=[w.x1-Math.sin(th)*dd/2,w.z1-Math.cos(th)*dd/2];
-    wall3d(gW,L2,stt,th,w.d?[{c:Math.min(Math.max(w.dc==null?L2/2:w.dc,.45),L2-.45),w:.8,h:2.1,t:'d'}]:[],H,dd,cc,y0,gC,gV,gA);
+    wall3d(gI,L2,stt,th,w.d?[{c:Math.min(Math.max(w.dc==null?L2/2:w.dc,.45),L2-.45),w:.8,h:2.1,t:'d'}]:[],H,dd,cc,y0,gC,gV,gA);
   });
   if(!isW){
     const kk=(o&&o.k)||0,LA=ELS.filter(e=>(e.k||0)===kk),L=LA.filter(e=>e.t!=='t'),LT=LA.filter(e=>e.t==='t'),y1=g0('elY')||.25;

@@ -1,6 +1,6 @@
 /* ---------- Skala av lager ---------- */
-const PEEL=['l14','l6','l5','l7','l12','l8','l9','l10','l11','l3','l2','l13','l1'];
-const PEELN=['Altan och balkong','Rännor och stuprör','Plåtdetaljer och vindskivor','Fasad','Luftspalt','Vindskydd','Takplåt','Takpapp','Råspont','Takstolar','Väggar','El invändigt','Golv'];
+const PEEL=['l14','l6','l5','l7','l12','l8','l9','l10','l11','l3','l2','l15','l13','l1'];
+const PEELN=['Altan och balkong','Rännor och stuprör','Plåtdetaljer och vindskivor','Fasad','Luftspalt','Vindskydd','Takplåt','Takpapp','Råspont','Takstolar','Väggar','Innerväggar','El invändigt','Golv'];
 function applyVis(){
   const R=R3;if(!R||!R.layers)return;
   Object.keys(R.layers).forEach(id=>R.layers[id].forEach(gr=>{gr.visible=$(id).checked;}));
